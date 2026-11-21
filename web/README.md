@@ -3,7 +3,7 @@
 Generates a web version (`build/web/`) and an EPUB (`build/asterion.epub`) of the book from
 the same LaTeX sources as the PDFs, with pandoc.
 
-    web/build.sh                     # the prototype chapters (Akce, Předměty)
+    web/build.sh                     # every chapter (the default)
     WEB_CHAPTERS=all web/build.sh    # every chapter
     WEB_CHAPTERS="akce triky" web/build.sh
 

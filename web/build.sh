@@ -2,7 +2,7 @@
 # Web edition and EPUB of the book, generated from the LaTeX sources with pandoc.
 #
 #   web/build.sh                     # -> build/web/ and build/asterion.epub
-#   WEB_CHAPTERS=all web/build.sh    # every chapter (default: the prototype chapters)
+#   WEB_CHAPTERS=all web/build.sh    # every chapter (the default)
 #   web/build.sh <out-dir> <epub>    # other output locations
 #
 # The output folder is self-contained and uses only relative links, so it can be served
@@ -19,7 +19,7 @@ WEB="$ROOT/web"
 LIB="$WEB/lib"
 OUT="${1:-$ROOT/build/web}"
 EPUBFILE="${2:-$ROOT/build/asterion.epub}"
-CHAPTERS="${WEB_CHAPTERS:-akce predmety}"   # slugs (see `labelmap.pl --chapters`) or "all"
+CHAPTERS="${WEB_CHAPTERS:-all}"   # slugs (see `labelmap.pl --chapters`) or "all"
 
 die() { printf 'web/build.sh: %s\n' "$*" >&2; exit 1; }
 for tool in pandoc perl; do command -v "$tool" >/dev/null || die "$tool not found"; done
@@ -44,6 +44,8 @@ while IFS=$'\t' read -r file slug title; do
 done < "$TMP/chapters.tsv"
 [ ${#built[@]} -gt 0 ] || die "no chapters selected (WEB_CHAPTERS=$CHAPTERS)"
 BUILT="$(IFS=,; echo "${built[*]}")"
+# appendix lists of all aspects and tricks (the PDF builds them in LuaLaTeX; see rejstrik.pl)
+perl "$LIB/rejstrik.pl" "$ROOT" "$TMP/chapters.tsv" "$BUILT" "$TMP"
 is_built() { [[ ",$BUILT," == *",$1,"* ]]; }
 
 # --- images: every \includegraphics of the built chapters, sized for the web -------------
@@ -97,7 +99,7 @@ prev=""; status=0
 for i in "${!order[@]}"; do
     slug="${order[$i]}"; is_built "$slug" || continue
     IFS=$'\t' read -r file _ title < <(awk -F'\t' -v s="$slug" '$2==s' "$TMP/chapters.tsv")
-    perl "$LIB/preprocess.pl" < "$ROOT/chapters/$file.tex" > "$TMP/$slug.tex"
+    REJSTRIK_DIR="$TMP" perl "$LIB/preprocess.pl" < "$ROOT/chapters/$file.tex" > "$TMP/$slug.tex"
 
     next=""
     for j in "${order[@]:$((i + 1))}"; do
@@ -114,7 +116,9 @@ for i in "${!order[@]}"; do
     prev="<a href=\"$slug.html\" rel=\"prev\">$title</a>"
 
     # nothing may get lost on the way: count the book's constructs in source and output
-    body="$(sed -n '/\\begin{document}/,/\\end{document}/p' "$ROOT/chapters/$file.tex" | sed 's/\([^\\]\)%.*/\1/; s/^%.*//')"
+    # (without comments and without \todo{…}: to-dos are left out of the web on purpose)
+    body="$(sed -n '/\\begin{document}/,/\\end{document}/p' "$ROOT/chapters/$file.tex" | sed 's/\([^\\]\)%.*/\1/; s/^%.*//' \
+        | perl -0pe 's/\\todo(?:\[[^\]]*\])?(\{(?:[^{}]++|(?1))*\})//g')"
     html="$(cat "$OUT/$slug.html")"
     check() {                                                 # name, source count, output count
         if [ "$2" != "$3" ]; then printf '  %-16s %-12s source %3s, web %3s  <-- MISMATCH\n' "$slug" "$1" "$2" "$3"; status=1; fi
@@ -123,9 +127,17 @@ for i in "${!order[@]}"; do
         check "$kind" "$(grep -o "\\\\begin{$kind}" <<< "$body" | wc -l)" \
                       "$(grep -o "class=\"box box-$(tr '[:upper:]' '[:lower:]' <<< "$kind")\"" <<< "$html" | wc -l)"
     done
-    for term in asp dov trk akc per; do
-        check "\\$term" "$(grep -o "\\\\$term{" <<< "$body" | wc -l)" "$(grep -o "class=\"$term\"" <<< "$html" | wc -l)"
-    done
+    if ! grep -q '\\vypisrejstrik' <<< "$body"; then      # the lists of terms are generated
+        for term in asp dov trk akc per; do
+            check "\\$term" "$(grep -o "\\\\$term{" <<< "$body" | wc -l)" "$(grep -o "class=\"$term\"" <<< "$html" | wc -l)"
+        done
+    else
+        check "list items" "$(grep -c '^\\item' "$TMP/rejstrik-asp.tex" "$TMP/rejstrik-trk.tex" | awk -F: '{s+=$2} END{print s}')" \
+                           "$(grep -o 'class="asp"\|class="trk"' <<< "$html" | wc -l)"
+    fi
+    check "table" "$(grep -oE '\\begin\{(tblr|tabular)\}' <<< "$body" | wc -l)" "$(grep -o '<table' <<< "$html" | wc -l)"
+    check "picture" "$(grep -oE '\\includegraphics' <<< "$(perl -0pe 's/\\begin\{comment\}.*?\\end\{comment\}//gs' <<< "$body")" | wc -l)" \
+                    "$(perl -0ne '$n++ while /<img(?![^>]*class="ikona")[^>]*>/g; print $n+0' <<< "$html")"
     check "iconitem" "$(grep -o '\\iconitem{' <<< "$body" | wc -l)" "$(grep -o 'class="ikona"' <<< "$html" | wc -l)"
     check "sidenote" "$(grep -oE '\\sidenote(mark)?\b' <<< "$body" | wc -l)" "$(grep -o 'class="sidenote"' <<< "$html" | wc -l)"
     printf '  %-28s -> %s\n' "chapters/$file.tex" "${OUT#"$ROOT"/}/$slug.html"
@@ -135,8 +147,8 @@ done
 {
     printf '# Fate Core: Asterion Hack\n\n'
     printf -- '[↩︎ O textu a ke stažení](../)\n\n'
-    printf 'Pravidla Fate Core upravená pro svět Asterionu. Webová verze je zatím **prototyp**: '
-    printf 'převedené kapitoly jsou odkazy, ostatní najdete v PDF.\n\n'
+    printf 'Pravidla Fate Core upravená pro svět Asterionu. '
+    printf 'Všechny kapitoly jsou níže, ke stažení je i PDF a EPUB.\n\n'
     printf '## Obsah\n\n'
     while IFS=$'\t' read -r file slug title; do
         if is_built "$slug"; then printf -- '- [%s](%s.html)\n' "$title" "$slug"

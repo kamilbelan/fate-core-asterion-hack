@@ -37,6 +37,26 @@ while ($main =~ /\\subfile\{chapters\/([^}]+)\}/g) {
     while ($tex =~ /\\(?:sub){0,2}section\*?\{((?:[^{}]|\{[^{}]*\})*)\}\s*(?:%[^\n]*)?\s*\n?\s*\\label\{([^}]+)\}/gs) {
         $map{$2} = { page => $slug, anchor => $2, title => clean($1) };
     }
+
+    # other labels, e.g. on a trick in a list (`\item\trk{Parkour}: \label{…}`): pandoc keeps
+    # them as an anchor; the link text is the nearest trick name before the label in the same
+    # item, otherwise the title of the section it is in
+    (my $body = $tex) =~ s/(?<!\\)%[^\n]*//g;
+    while ($body =~ /\\label\{([^}]+)\}/g) {
+        my ($label, $pos) = ($1, $-[0]);
+        next if exists $map{$label};
+        my $before = substr($body, 0, $pos);
+        my $item   = $before =~ /.*\\item(.*)\z/s ? $1 : substr($before, -300);
+        my $title;
+        if ($item =~ /.*\\trk\{([^{}]*)\}/s) {
+            $title = clean($1);
+        } elsif ($before =~ /.*\\(?:sub){0,2}section\*?\{((?:[^{}]|\{[^{}]*\})*)\}/s) {
+            $title = clean($1);
+        } else {
+            $title = $chapters[-1]{title};
+        }
+        $map{$label} = { page => $slug, anchor => $label, title => $title };
+    }
 }
 die "labelmap: found no chapters in $src/main.tex\n" unless @chapters;
 

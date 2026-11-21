@@ -70,7 +70,13 @@ end
 -- \Cref{…} -> a link with the target's title; a target without a web page yet stays text
 function Link(el)
   local ref = el.attributes["reference"]
-  if not ref then return nil end
+  if not ref then
+    -- links between chapters ("akce.html", e.g. in the lists of terms): inside the EPUB they
+    -- point to the chapter's heading in the same book
+    local page = el.target:match("^([%w-]+)%.html$")
+    if EPUB and page then el.target = "#kapitola-" .. page end
+    return el
+  end
   local t = MAP[ref]
   if not t then
     report("unresolved reference", ref)
