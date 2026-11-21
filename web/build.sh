@@ -134,6 +134,7 @@ done
 # --- contents page -------------------------------------------------------------------------
 {
     printf '# Fate Core: Asterion Hack\n\n'
+    printf -- '[↩︎ O knize a ke stažení](../)\n\n'
     printf 'Pravidla Fate Core upravená pro svět Asterionu. Webová verze je zatím **prototyp**: '
     printf 'převedené kapitoly jsou odkazy, ostatní najdete v PDF.\n\n'
     printf '## Obsah\n\n'
@@ -168,5 +169,56 @@ pandoc -f latex -t epub3 "${common[@]}" -M page="" \
     "${epub_in[@]}" -o "$EPUBFILE" 2> "$TMP/epub.err" || die "pandoc failed on the EPUB"
 if [ -s "$TMP/epub.err" ]; then cat "$TMP/epub.err" >&2; status=1; fi
 printf '  %-28s -> %s\n' "(EPUB)" "${EPUBFILE#"$ROOT"/}"
+
+# --- landing page: the site root, next to the PDFs and the EPUB ------------------------------
+# Chapter list and file details (size, pages) are filled in from what was actually built; a
+# file that does not exist is left out rather than offered as a dead link.
+SITE="$(dirname "$OUT")"
+REPO="https://github.com/kamilbelan/fate-core-asterion-hack"
+total=$(wc -l < "$TMP/chapters.tsv")
+partial=""; [ ${#built[@]} -lt "$total" ] && partial="zatím ${#built[@]} z $total kapitol"
+
+mb()    { awk -v b="$(stat -c %s "$1")" 'BEGIN { s = sprintf("%.1f", b / 1048576); sub(/\./, ",", s); print s " MB" }'; }
+pages() { command -v pdfinfo >/dev/null && pdfinfo "$1" 2>/dev/null | awk '/^Pages:/ { print " · " $2 " stran" }' || true; }
+card() {   # href, title, meta, [extra class], [download name] -- the personal site's .soubor
+    local dl="" cls="soubor"
+    [ -n "${4:-}" ] && cls="soubor $4"
+    [ -n "${5:-}" ] && dl=" download=\"$5\""
+    printf '    <a class="%s" href="%s"%s>\n      <strong>%s</strong>\n      <span class="soubor-meta">%s</span>\n    </a>\n' \
+        "$cls" "$1" "$dl" "$2" "$3"
+}
+files="$(
+    card web/index.html "Číst online" "web${partial:+ · $partial}" soubor-hlavni
+    [ -f "$SITE/main.pdf" ]   && card main.pdf "PDF pro počítač" "A4 · $(mb "$SITE/main.pdf")$(pages "$SITE/main.pdf")"
+    [ -f "$SITE/mobile.pdf" ] && card mobile.pdf "PDF pro mobil" "$(mb "$SITE/mobile.pdf")$(pages "$SITE/mobile.pdf")"
+    [ -f "$EPUBFILE" ]        && card "$(basename "$EPUBFILE")" "EPUB" "$(mb "$EPUBFILE")${partial:+ · $partial}" "" "fate-asterion-hack.epub"
+    card "$REPO" "Zdrojový kód" "GitHub · LaTeX"
+)"
+chapters_html=""; appendices_html=""
+while IFS=$'\t' read -r file slug title; do
+    title="$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<< "$title")"
+    if is_built "$slug"; then item="<li><a href=\"web/$slug.html\">$title</a></li>"
+    else item="<li class=\"jen-pdf\">$title <small>(pdf)</small></li>"; fi
+    if [[ "$slug" == dodatky-* ]]; then appendices_html+="    $item"$'\n'; else chapters_html+="    $item"$'\n'; fi
+done < "$TMP/chapters.tsv"
+
+# The landing page is a page of kamilbelan.net and uses its stylesheet. Its file name carries
+# a content hash, so the current one is read from the live site and copied next to the page
+# (a later redeploy of the personal site cannot break it); without network, the page still
+# gets the shared /theme/theme.css and the adapter styles.
+SITE_URL="https://kamilbelan.net"
+sitecss=""
+css_path="$(curl -fsS --max-time 20 "$SITE_URL/" 2>/dev/null | grep -o '/css/main\.min\.[0-9a-f]*\.css' | head -1 || true)"
+if [ -n "$css_path" ] && curl -fsS --max-time 20 "$SITE_URL$css_path" -o "$OUT/assets/site.css" 2>/dev/null; then
+    sitecss="web/assets/site.css"
+else
+    printf 'web/build.sh: warning: could not fetch the stylesheet of %s; landing page without it\n' "$SITE_URL" >&2
+fi
+pandoc -f markdown -t html5 --template="$WEB/templates/landing.html" -M pagetitle=landing \
+    -V version="$VERSION" -V repo="$REPO" -V files="$files" -V sitecss="$sitecss" \
+    -V chapters="$chapters_html" -V appendices="$appendices_html" \
+    -V webnote="${partial:+převedeno ${#built[@]} z $total}" \
+    /dev/null -o "$SITE/index.html"
+printf '  %-28s -> %s\n' "(landing page)" "${SITE#"$ROOT"/}/index.html"
 
 [ "$status" -eq 0 ] || die "finished with warnings (see above): something may be missing in the output"
