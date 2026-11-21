@@ -1,0 +1,46 @@
+/* EPUB edition: deliberately plain. Reader apps (Apple Books, Google Play Books, Moon+…)
+   override fonts, sizes and often colours, so the styling only marks what things are:
+   game terms, boxes, action lists, tables. No webfonts: the reader's own font is used. */
+
+body { line-height: 1.5; }
+h1, h2, h3, h4 { font-family: sans-serif; line-height: 1.25; }
+h1 { color: #0066cc; }
+
+/* game terms */
+.asp { font-weight: bold; font-style: italic; }
+.dov { font-family: sans-serif; font-weight: 600; font-size: 0.92em; }
+.trk { font-style: italic; color: #00665c; }
+.akc { font-variant: small-caps; }
+.per { font-family: sans-serif; font-weight: bold; }
+.poznamka { color: #666; }
+
+/* boxes: a coloured rule on the left, a light tint; readable without colours too */
+.box { margin: 1em 0; padding: 0.4em 0.8em; border-left: 4px solid #555; background: #f2f2f2; }
+.box-title { font-family: sans-serif; margin-bottom: 0.3em; }
+.box-pravidlo   { border-left-color: #4d4d4d; background: #ececec; }
+.box-predmet    { border-left-color: #0000b3; background: #eef0ff; }
+.box-povolani   { border-left-color: #8a8a00; background: #fbfbe0; }
+.box-real       { border-left-color: #690000; background: #f7e8e8; }
+.box-specialita { border-left-color: #005c5c; background: #e6f2f2; }
+.box-prozatimni { border-left-color: #b35900; background: #fff1e0; }
+.box ul { padding-left: 1.2em; }
+.box-predmet > ul, .box-specialita > ul { list-style: none; padding-left: 0; }
+
+/* track boxes: +1 +1 +1 … */
+.policko { display: inline-block; border: 1px solid #333; padding: 0 0.2em; margin: 0 0.1em 0.1em 0;
+           font-size: 0.85em; line-height: 1.3; }
+
+/* actions with icons */
+.akce ul { list-style: none; padding-left: 0; }
+.akce li { margin: 0.6em 0; }
+img.ikona { width: 1.8em; height: 1.8em; vertical-align: middle; margin-right: 0.4em; }
+
+/* tables */
+table { border-collapse: collapse; margin: 0.8em 0; }
+th, td { padding: 0.2em 0.6em; text-align: left; }
+thead th { border-bottom: 1px solid #333; }
+table { border-top: 1.5px solid #333; border-bottom: 1.5px solid #333; }
+
+figure { margin: 1em 0; text-align: center; }
+figure img { max-width: 100%; }
+figcaption { font-size: 0.8em; }

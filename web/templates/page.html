@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="$lang$">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17191d" media="(prefers-color-scheme: dark)">
+<title>$pagetitle$ – $booktitle$</title>
+<script>
+/* theme before first paint (no flash); see web.js for the toggle */
+(function (d) {
+  try {
+    var t = localStorage.getItem("asterion-theme");
+    if (t === "light" || t === "dark") d.setAttribute("data-theme", t);
+  } catch (e) {}
+})(document.documentElement);
+</script>
+<link rel="preload" href="assets/fonts/EBGaramond-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/web.css">
+<script src="assets/web.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#text">Přejít na text</a>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="header-button menu-fallback" href="#navigace">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>Obsah</span>
+    </a>
+    <button type="button" class="header-button menu-button" id="menu-button" aria-controls="navigace" aria-expanded="false" hidden>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>Obsah</span>
+    </button>
+    <a class="site-title" href="index.html">$booktitle$</a>
+    <button type="button" class="header-button theme-button" id="theme-button" hidden>
+      <svg class="icon icon-auto" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path class="fill" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
+      <svg class="icon icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>
+      <svg class="icon icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      <span class="visually-hidden" id="theme-label">Barevný režim</span>
+    </button>
+  </div>
+</header>
+
+<div class="page">
+<main id="text" tabindex="-1">
+$body$
+</main>
+
+$if(prev)$
+<nav class="pager" aria-label="Sousední kapitoly">
+  <div class="pager__prev"><span class="pager__label">Předchozí</span> $prev$</div>
+$if(next)$
+  <div class="pager__next"><span class="pager__label">Další</span> $next$</div>
+$endif$
+</nav>
+$else$
+$if(next)$
+<nav class="pager" aria-label="Sousední kapitoly">
+  <div class="pager__next"><span class="pager__label">Další</span> $next$</div>
+</nav>
+$endif$
+$endif$
+
+<nav class="drawer" id="navigace" aria-label="Obsah knihy">
+  <div class="drawer__head">
+    <a class="drawer__title" href="index.html">Obsah</a>
+    <button type="button" class="header-button drawer__close" id="drawer-close" aria-label="Zavřít obsah" hidden>
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <ul class="book-nav">
+$nav$
+  </ul>
+$if(table-of-contents)$
+  <div class="page-toc" id="page-toc">
+    <p class="page-toc__label">Na této stránce</p>
+$table-of-contents$
+  </div>
+$endif$
+</nav>
+
+<footer class="site-footer">
+  <p class="downloads__label">Stáhnout celou knihu</p>
+  <ul class="downloads">
+    <li><a href="../main.pdf">PDF <small>A4</small></a></li>
+    <li><a href="../mobile.pdf">PDF <small>pro mobil</small></a></li>
+    <li><a href="../asterion.epub">EPUB <small>čtečky</small></a></li>
+  </ul>
+  <p class="version"><a href="index.html">$booktitle$</a>, $version$</p>
+</footer>
+</div>
+</body>
+</html>

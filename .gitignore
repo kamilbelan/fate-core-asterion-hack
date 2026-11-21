@@ -333,3 +333,5 @@ build/*.zbrane
 build/*.predmety
 build/*.zdroje
 build/*.synctex.gz
+build/web/
+build/asterion.epub

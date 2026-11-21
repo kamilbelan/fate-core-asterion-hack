@@ -282,6 +282,12 @@
                     </svg>
                     Mobil
                 </button>
+                <button type="button" data-view="web" aria-pressed="false">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>
+                    </svg>
+                    Web
+                </button>
             </div>
         </div>
         <p class="view-hint" id="view-hint">Verze A4 s poznámkami na okraji – pro počítač a tisk.</p>
@@ -319,6 +325,12 @@
                 </svg>
                 Pro mobil <small>(malá stránka)</small>
             </a>
+            <a href="asterion.epub" download="fate-asterion-hack.epub" class="btn">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
+                </svg>
+                EPUB <small>(čtečky knih)</small>
+            </a>
         </div>
 
         <div class="info">
@@ -343,6 +355,12 @@
                     file: 'mobile.pdf',
                     hint: 'Malá stránka pro telefon – poznámky jsou pod čarou. Na telefonu ji otevřete tlačítkem níže.',
                     open: 'Otevřít verzi pro mobil'
+                },
+                web: {
+                    file: 'web/index.html',
+                    html: true,
+                    hint: 'Webová verze – přizpůsobí se obrazovce, má tmavý režim a odkazy na jednotlivá pravidla. Zatím prototyp: jen některé kapitoly.',
+                    open: 'Otevřít webovou verzi'
                 }
             };
             var container = document.getElementById('pdf-container');
@@ -350,17 +368,28 @@
             var openCurrent = document.getElementById('open-current');
             var openLabel = document.getElementById('open-current-label');
             var buttons = document.querySelectorAll('.segmented button');
+            var pdfTemplate = document.getElementById('pdf-object').cloneNode(true);
 
             function setView(name, remember) {
                 var v = views[name] || views.desktop;
-                // <object> does not reload when only its `data` changes, so it is replaced
+                // <object> does not reload when only its `data` changes, so the viewer is
+                // replaced: an <object> for the PDFs (with a fallback link), an <iframe> for the web
                 var old = document.getElementById('pdf-object');
-                var obj = old.cloneNode(true);
-                obj.setAttribute('data', v.file + '#toolbar=1&navpanes=1&scrollbar=1');
-                obj.querySelector('#fallback-open').setAttribute('href', v.file);
-                old.parentNode.replaceChild(obj, old);
+                var viewer;
+                if (v.html) {
+                    viewer = document.createElement('iframe');
+                    viewer.setAttribute('src', v.file);
+                    viewer.setAttribute('title', 'Webová verze');
+                } else {
+                    viewer = pdfTemplate.cloneNode(true);
+                    viewer.setAttribute('data', v.file + '#toolbar=1&navpanes=1&scrollbar=1');
+                    viewer.querySelector('#fallback-open').setAttribute('href', v.file);
+                }
+                viewer.id = 'pdf-object';
+                viewer.className = 'pdf-embed';
+                old.parentNode.replaceChild(viewer, old);
 
-                container.classList.toggle('mobile', name === 'mobile');
+                container.classList.toggle('mobile', name === 'mobile' || name === 'web');
                 hint.textContent = v.hint;
                 openCurrent.setAttribute('href', v.file);
                 openLabel.textContent = v.open;
