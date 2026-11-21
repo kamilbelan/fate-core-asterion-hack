@@ -57,6 +57,21 @@
 	footskip=40pt,
 }}
 
+%%% Phone edition (`mobile.tex`): a small page of about the shape of a phone screen, so that
+%%   "fit to width" shows the text at a readable size; no margin column (both geometries are
+%%   the same), margin notes become footnotes (below), pages are not stretched to equal height
+\ifMOBILE
+    \newcommand*{\mobilegeometry}{%
+        paperwidth=90mm, paperheight=160mm,
+        left=5mm, right=5mm, top=7mm, bottom=11mm,
+        footskip=6mm, headheight=0pt, headsep=0pt,
+        marginparsep=0pt, marginparwidth=0pt,
+    }
+    \expandafter\geometry\expandafter{\mobilegeometry}
+    \renewcommand{\standardgeometry}{\expandafter\newgeometry\expandafter{\mobilegeometry}}
+    \renewcommand{\widegeometry}{\expandafter\newgeometry\expandafter{\mobilegeometry}}
+\fi
+
 %% computed when used, since the margin width depends on the active geometry
 \newlength{\overhang}
 %
@@ -120,5 +135,31 @@
 %
 %% try to make text on all pages have the same height (default for `twoside`)
 
-\flushbottom
+\ifMOBILE
+    \raggedbottom % small pages with big boxes: do not stretch the page to full height
+\else
+    \flushbottom
+\fi
+
+%%% Phone edition: margin notes become footnotes
+%% `\sidenotemark`s may come before their `\sidenotetext`s (e.g. in `akce` lists), so the
+%% numbers of the marks are queued and each `\sidenotetext` takes the oldest one.
+\ifMOBILE
+\ExplSyntaxOn
+\seq_new:N \g__asterion_sidenote_marks_seq
+\RenewDocumentCommand{\sidenote}{o o +m}{\footnote{#3}}
+\RenewDocumentCommand{\sidenotemark}{o}{%
+    \footnotemark
+    \seq_gput_right:Ne \g__asterion_sidenote_marks_seq { \int_eval:n { \value{footnote} } }
+}
+\RenewDocumentCommand{\sidenotetext}{o o +m}{%
+    \seq_gpop_left:NNTF \g__asterion_sidenote_marks_seq \l_tmpa_tl
+      { \footnotetext[\l_tmpa_tl]{#3} }
+      { \footnotetext{#3} }
+}
+\ExplSyntaxOff
+%% two columns are too narrow on the small page (and `multicols` loops there): use one column
+\RenewDocumentEnvironment{multicols}{m o o}{}{}
+\RenewDocumentCommand{\columnbreak}{}{}
+\fi
 

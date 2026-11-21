@@ -6,6 +6,7 @@
 \WIPtrue
 \EXTRAMARGINtrue
 \CENSORtrue
+\ifdefined\AsterionMobileEdition\MOBILEtrue\fi % phone edition, see `mobile.tex`
 
 %% Preamble
 \input{preamble/main}
@@ -22,7 +23,7 @@
 \begin{document}
 
 \frontmatter
-\include{chapters/title}
+\input{chapters/title} % (not \include: its .aux would be shared by both editions)
 
 \contentsandlists
 
@@ -83,7 +84,9 @@
 \subfile{chapters/dodatky/netvorobijec}
 \subfile{chapters/dodatky/edenuvbratr}
 \subfile{chapters/dodatky/subotam}
+\subfile{chapters/dodatky/zmeny}
 
+\zdrojeobrazku
 \references
 
 \end{document}

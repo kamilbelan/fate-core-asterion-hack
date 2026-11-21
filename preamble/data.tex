@@ -61,3 +61,18 @@
 \newcommand*{\KeywordsPlaintext}{%
     Fate Core, Asterion, RPG, fantasy, hry na hrdiny
 }
+
+%% Version shown on the title page: build date and git commit (`verze 21. listopadu 2026 (abd8d80)`).
+%% The commit comes from `git` (needs `-shell-escape`, set in `.latexmkrc`), or on GitHub Actions
+%% from `GITHUB_SHA`; if neither is available, only the date is shown.
+\newcommand*{\AsterionCommit}{\directlua{
+    local c = ""
+    local h = io.popen and io.popen("git rev-parse --short HEAD 2>/dev/null")
+    if h then c = h:read("*l") or ""; h:close() end
+    if c == "" and os.getenv("GITHUB_SHA") then c = os.getenv("GITHUB_SHA"):sub(1, 7) end
+    tex.sprint(-2, c)
+}}
+\newcommand*{\AsterionVerze}{%
+    verze \today\edef\AsterionCommitText{\AsterionCommit}%
+    \ifx\AsterionCommitText\empty\else\ (\texttt{\AsterionCommitText})\fi
+}

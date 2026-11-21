@@ -22,21 +22,29 @@
 %% Big colored number in a box on the left, bold title aligned
 %% (colour `FateBlue` is defined in `preamble/general/colors.tex`, it is shared with links)
 
+%% sizes: number box, gap between box and title, font sizes of number and title
+\ifMOBILE
+    \def\chapheadbox{1.1cm}\def\chapheadgap{0.45cm}
+    \def\chapheadnumfont{\fontsize{21pt}{21pt}}\def\chapheadtitlefont{\fontsize{15pt}{17pt}}
+\else
+    \def\chapheadbox{1.5cm}\def\chapheadgap{0.7cm}
+    \def\chapheadnumfont{\fontsize{28pt}{28pt}}\def\chapheadtitlefont{\fontsize{20pt}{22pt}}
+\fi
 \NewDocumentCommand{\chaphead}{s O{} m}{
     \vspace*{-20pt}% adjust vertical space before title
     \noindent
     \begin{tikzpicture}[baseline=(title.base)]
         % Box with chapter number
         \node[fill=FateBlue,text=white,rounded corners=3pt,
-              minimum width=1.5cm,minimum height=1.5cm,
-              align=center,font=\sffamily\bfseries\fontsize{28pt}{28pt}\selectfont] (num)
+              minimum width=\chapheadbox,minimum height=\chapheadbox,
+              align=center,font=\sffamily\bfseries\chapheadnumfont\selectfont] (num)
               at (0,0) {\IfBooleanTF{#1}{}{#2}};
         % Chapter title (wraps within the text width, without hyphenation)
-        \node[anchor=west,xshift=2cm,font=\sffamily\bfseries\fontsize{20pt}{22pt}\selectfont,text=FateBlue,
-              text width=\linewidth-3.5cm-0.7em,align=left] (title)
+        \node[anchor=west,xshift=\chapheadgap,font=\sffamily\bfseries\chapheadtitlefont\selectfont,text=FateBlue,
+              text width=\linewidth-\chapheadbox-\chapheadgap-0.7em,align=left] (title)
               at (num.east) {\hyphenpenalty=10000\MakeUppercase{#3}\par};% `\par` while the penalty is still set
     \end{tikzpicture}
-    \par\vspace{25pt}
+    \par\vspace{\ifMOBILE 14pt\else 25pt\fi}
 }
 
 %% Hook into report.cls

@@ -10,3 +10,6 @@ $biber      = 'biber --input-directory=build %O %B';
 # Run limits
 $max_repeat = 5;
 $continuous = 0;
+
+# Both editions: print/desktop (main.tex) and phone (mobile.tex, inputs main.tex)
+@default_files = ('main.tex', 'mobile.tex');

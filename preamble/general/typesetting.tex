@@ -45,9 +45,14 @@
    }
 \DisableLigatures[-]{family=tt*} % disable ligatures in typewriter font
 
-%% NOTE: `parskip` sends lualatex into an endless loop of empty pages
-%%       (triggered around the plain `tcolorbox` with `\subsection{Druid}` in `chapters/povolani.tex`)
-% \usepackage{parskip}             % no paragraph indentation
+%% NOTE: `parskip` used to send lualatex into an endless loop of empty pages, triggered by the
+%%       unbreakable plain `tcolorbox`es with a `\subsection` inside in `chapters/povolani.tex`;
+%%       those are breakable `povolani` boxes now. If such a loop ever reappears, look for an
+%%       unbreakable box (or `multicols`) near the page where it starts.
+\usepackage{parskip}             % paragraphs separated by space, no indentation (reads well on a phone)
+
+%% Czech: no one-letter prepositions/conjunctions (v, k, s, z, o, u, a, i) at the end of a line
+\usepackage{luavlna}
 \usepackage{csquotes}            % context-sensitive quotation facilities
 
 %% Enumerate/itemize environments

@@ -2,10 +2,12 @@
 
 %% Quick inline todo command
 \NewDocumentCommand{\todo}{O{} >{\TrimSpaces} m}{%
+    \ifWIP % shown only in the work-in-progress edition (`\WIPtrue` in `main.tex`)
     \textcolor{red}{%
         \textsf{TODO\IfBlankF{#1}{(#1)}}%
         \IfBlankTF{#2}{.}{: #2}%
     }%
+    \fi
 }
 
 %% Base style for todo-like environments

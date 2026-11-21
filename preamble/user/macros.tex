@@ -5,11 +5,42 @@
 
 \usepackage{hologo} % Provides *TeX logos (for example `\hologo{pdfLaTeX}`)
 
-\newcommand{\asp}[1]{\textbf{\textit{#1}}}   % Bold and italic for \asp{}
-\newcommand{\dov}[1]{\texttt{\textbf{\spaceskip=0.525em plus 0.3em minus 0.1em\relax#1}}}   % Monospace and bold for \dov{} (spaces may stretch, so lines with skills can be justified)
-\newcommand{\trk}[1]{\underline{\textit{#1}}} % Italic and underlined for \trk{}
-\newcommand{\akc}[1]{\textsc{#1}}            % Small caps for \akc{}
-\newcommand{\per}[1]{\textbf{\sffamily #1}}
+%%% Game terms: one consistent style per kind (readable on a phone and in greyscale print)
+%%   aspect: bold italic | skill: sans semibold | trick: italic in TrickColor
+%%   action: small caps  | peripetie: sans bold
+%% skills: Source Sans Semibold scaled to the x-height of the text, so a skill name does not look bigger
+\newfontfamily\dovfont{SourceSansPro-Semibold}[Extension=.otf, Scale=MatchLowercase]
+\newcommand{\asp}[1]{\textbf{\textit{#1}}}       % aspect
+\newcommand{\dov}[1]{{\dovfont #1}}              % skill
+\newcommand{\trk}[1]{\textcolor{TrickColor}{\textit{#1}}} % trick (no underline: on screen it looks like a link)
+\newcommand{\akc}[1]{\textsc{#1}}                % action
+\newcommand{\per}[1]{\textbf{\sffamily #1}}      % peripetie
+
+%%% Image credits: `\zdrojobrazku{<url>}` under an illustration prints a small "zdroj" link
+%%   (instead of a numbered caption) and records the page and the site for the list of image
+%%   sources at the end of the book (`\zdrojeobrazku`, called in `main.tex`)
+\NewDocumentCommand{\zdrojobrazku}{m}{%
+    \par\nobreak\vspace{2pt}%
+    {\centering\footnotesize\href{#1}{zdroj}\par}%
+    \addtocontents{zdroje}{\protect\zdrojobrazkuradek{\thepage}{\detokenize{#1}}}%
+}
+%% one line of the list: page, then the site's domain as a link to the source
+\NewDocumentCommand{\zdrojobrazkuradek}{mm}{%
+    \par\noindent\makebox[3.5em][l]{s.~#1}%
+    \href{#2}{\directlua{
+        local p = string.char(37) % Lua's pattern escape (a literal percent sign would be a TeX comment)
+        local url = "\luaescapestring{#2}"
+        local host = string.match(url, "^" .. p .. "a+://([^/]+)") or url
+        tex.sprint(-2, (host:gsub("^www" .. p .. ".", "")))
+    }}\par
+}
+\makeatletter
+\NewDocumentCommand{\zdrojeobrazku}{}{%
+    \chapter*{Zdroje obrázků}%
+    \addcontentsline{toc}{chapter}{Zdroje obrázků}%
+    {\hypersetup{linkcolor=FateBlue}\@starttoc{zdroje}}%
+}
+\makeatother
 
 \ExplSyntaxOn
 

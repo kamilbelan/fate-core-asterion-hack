@@ -11,17 +11,27 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --muted: #6b6b6b;
+            --border: #e5e5e5;
+            --accent: #0066cc; /* FateBlue: chapter headings and links in the book */
+            --accent-text: #ffffff;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Liberation Sans', sans-serif;
-            background: #fafafa;
-            color: #1a1a1a;
+            background: var(--bg);
+            color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
         }
 
         .header {
-            background: #ffffff;
-            border-bottom: 1px solid #e5e5e5;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
             padding: 1.5rem 1rem;
             text-align: center;
         }
@@ -30,11 +40,10 @@
             font-size: 2rem;
             font-weight: 600;
             margin-bottom: 0.25rem;
-            color: #1a1a1a;
         }
 
         .version {
-            color: #6b6b6b;
+            color: var(--muted);
             font-size: 0.9rem;
             font-weight: 400;
         }
@@ -45,31 +54,92 @@
             padding: 2rem 1rem;
         }
 
-        .pdf-viewer {
-            width: 100%;
-            height: 600px;
-            border: 1px solid #e5e5e5;
-            border-radius: 4px;
-            margin-bottom: 1.5rem;
-            background: #ffffff;
+        /* view switch: Počítač | Mobil */
+        .view-switch {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .segmented {
+            display: inline-flex;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .segmented button {
+            font: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.5rem 1.25rem;
+            border: none;
+            background: var(--surface);
+            color: var(--accent);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .segmented button + button {
+            border-left: 1px solid var(--accent);
+        }
+
+        .segmented button[aria-pressed="true"] {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .segmented button:focus-visible,
+        .btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .view-hint {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
         }
 
         .pdf-container {
             width: 100%;
             height: 600px;
-            border: 1px solid #e5e5e5;
+            margin: 0 auto 1.5rem;
+            border: 1px solid var(--border);
             border-radius: 4px;
-            margin-bottom: 1.5rem;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: var(--surface);
+            overflow: hidden;
+        }
+
+        /* the phone edition is shown in a phone-shaped frame */
+        .pdf-container.mobile {
+            max-width: 380px;
+            height: 680px;
+            border-radius: 18px;
+            border-width: 6px;
         }
 
         .pdf-embed {
             width: 100%;
             height: 100%;
             border: none;
+            display: block;
+        }
+
+        /* shown by browsers that cannot display PDFs inline (most phones) */
+        .pdf-fallback {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--muted);
         }
 
         .buttons {
@@ -77,12 +147,19 @@
             gap: 1rem;
             flex-wrap: wrap;
             justify-content: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .downloads-title {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
         }
 
         .btn {
             padding: 0.75rem 1.5rem;
-            border: 1px solid #1a1a1a;
+            border: 1px solid var(--text);
             border-radius: 4px;
             font-size: 0.95rem;
             font-weight: 500;
@@ -92,27 +169,44 @@
             align-items: center;
             gap: 0.5rem;
             transition: all 0.2s ease;
-            background: #ffffff;
-            color: #1a1a1a;
+            background: var(--surface);
+            color: var(--text);
         }
 
         .btn:hover {
-            background: #1a1a1a;
-            color: #ffffff;
+            background: var(--text);
+            color: var(--surface);
+        }
+
+        .btn.primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .btn.primary:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn small {
+            font-weight: 400;
+            opacity: 0.75;
         }
 
         .icon {
             width: 18px;
             height: 18px;
+            flex: none;
         }
 
         .info {
+            margin-top: 1rem;
             padding: 1.5rem;
-            background: #ffffff;
-            border: 1px solid #e5e5e5;
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 4px;
             text-align: center;
-            color: #6b6b6b;
+            color: var(--muted);
             font-size: 0.9rem;
         }
 
@@ -125,13 +219,13 @@
         }
 
         .info a {
-            color: #1a1a1a;
+            color: var(--text);
             text-decoration: none;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid var(--text);
         }
 
         .info a:hover {
-            border-bottom: 2px solid #1a1a1a;
+            border-bottom-width: 2px;
         }
 
         @media (max-width: 768px) {
@@ -139,12 +233,9 @@
                 font-size: 1.5rem;
             }
 
-            .pdf-viewer {
-                height: 400px;
-            }
-
-            .pdf-container {
-                height: 400px;
+            .pdf-container,
+            .pdf-container.mobile {
+                height: 420px;
             }
 
             .buttons {
@@ -158,58 +249,14 @@
         }
 
         @media (prefers-color-scheme: dark) {
-            body {
-                background: #1a1a1a;
-                color: #e5e5e5;
-            }
-
-            .header {
-                background: #242424;
-                border-bottom: 1px solid #3a3a3a;
-            }
-
-            .header h1 {
-                color: #e5e5e5;
-            }
-
-            .version {
-                color: #a0a0a0;
-            }
-
-            .pdf-viewer {
-                border: 1px solid #3a3a3a;
-                background: #242424;
-            }
-
-            .pdf-container {
-                border: 1px solid #3a3a3a;
-                background: #242424;
-            }
-
-            .btn {
-                background: #242424;
-                color: #e5e5e5;
-                border: 1px solid #e5e5e5;
-            }
-
-            .btn:hover {
-                background: #e5e5e5;
-                color: #1a1a1a;
-            }
-
-            .info {
-                background: #242424;
-                border: 1px solid #3a3a3a;
-                color: #a0a0a0;
-            }
-
-            .info a {
-                color: #e5e5e5;
-                border-bottom: 1px solid #e5e5e5;
-            }
-
-            .info a:hover {
-                border-bottom: 2px solid #e5e5e5;
+            :root {
+                --bg: #1a1a1a;
+                --surface: #242424;
+                --text: #e5e5e5;
+                --muted: #a0a0a0;
+                --border: #3a3a3a;
+                --accent: #4d9fff;
+                --accent-text: #0d1b2a;
             }
         }
     </style>
@@ -221,23 +268,56 @@
     </div>
 
     <div class="container">
-        <div class="pdf-container">
-            <embed class="pdf-embed" src="main.pdf#toolbar=1&navpanes=1&scrollbar=1" type="application/pdf">
+        <div class="view-switch">
+            <div class="segmented" role="group" aria-label="Zobrazení">
+                <button type="button" data-view="desktop" aria-pressed="true">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>
+                    </svg>
+                    Počítač
+                </button>
+                <button type="button" data-view="mobile" aria-pressed="false">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>
+                    </svg>
+                    Mobil
+                </button>
+            </div>
+        </div>
+        <p class="view-hint" id="view-hint">Verze A4 s poznámkami na okraji – pro počítač a tisk.</p>
+
+        <div class="pdf-container" id="pdf-container">
+            <object class="pdf-embed" id="pdf-object" data="main.pdf#toolbar=1&amp;navpanes=1&amp;scrollbar=1" type="application/pdf">
+                <div class="pdf-fallback">
+                    <p>Tento prohlížeč neumí zobrazit PDF přímo na stránce.</p>
+                    <a class="btn primary" id="fallback-open" href="main.pdf" target="_blank">Otevřít PDF</a>
+                </div>
+            </object>
         </div>
 
         <div class="buttons">
-            <a href="main.pdf" download class="btn">
-                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
-                </svg>
-                Stáhnout PDF
-            </a>
-            <a href="main.pdf" target="_blank" class="btn">
-                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+            <a class="btn primary" id="open-current" href="main.pdf" target="_blank">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
                     <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
                 </svg>
-                Otevřít v nové záložce
+                <span id="open-current-label">Otevřít verzi pro počítač</span>
+            </a>
+        </div>
+
+        <p class="downloads-title">Stáhnout</p>
+        <div class="buttons">
+            <a href="main.pdf" download="fate-asterion-hack.pdf" class="btn">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
+                </svg>
+                Pro počítač <small>(A4)</small>
+            </a>
+            <a href="mobile.pdf" download="fate-asterion-hack-mobil.pdf" class="btn">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
+                </svg>
+                Pro mobil <small>(malá stránka)</small>
             </a>
         </div>
 
@@ -250,5 +330,68 @@
             </p>
         </div>
     </div>
+
+    <script>
+        (function () {
+            var views = {
+                desktop: {
+                    file: 'main.pdf',
+                    hint: 'Verze A4 s poznámkami na okraji – pro počítač a tisk.',
+                    open: 'Otevřít verzi pro počítač'
+                },
+                mobile: {
+                    file: 'mobile.pdf',
+                    hint: 'Malá stránka pro telefon – poznámky jsou pod čarou. Na telefonu ji otevřete tlačítkem níže.',
+                    open: 'Otevřít verzi pro mobil'
+                }
+            };
+            var container = document.getElementById('pdf-container');
+            var hint = document.getElementById('view-hint');
+            var openCurrent = document.getElementById('open-current');
+            var openLabel = document.getElementById('open-current-label');
+            var buttons = document.querySelectorAll('.segmented button');
+
+            function setView(name, remember) {
+                var v = views[name] || views.desktop;
+                // <object> does not reload when only its `data` changes, so it is replaced
+                var old = document.getElementById('pdf-object');
+                var obj = old.cloneNode(true);
+                obj.setAttribute('data', v.file + '#toolbar=1&navpanes=1&scrollbar=1');
+                obj.querySelector('#fallback-open').setAttribute('href', v.file);
+                old.parentNode.replaceChild(obj, old);
+
+                container.classList.toggle('mobile', name === 'mobile');
+                hint.textContent = v.hint;
+                openCurrent.setAttribute('href', v.file);
+                openLabel.textContent = v.open;
+                buttons.forEach(function (b) {
+                    b.setAttribute('aria-pressed', b.dataset.view === name ? 'true' : 'false');
+                });
+                if (remember) {
+                    try { localStorage.setItem('asterion-view', name); } catch (e) {}
+                    try {
+                        var url = new URL(window.location.href);
+                        url.searchParams.set('view', name);
+                        history.replaceState(null, '', url);
+                    } catch (e) {}
+                }
+            }
+
+            buttons.forEach(function (b) {
+                b.addEventListener('click', function () { setView(b.dataset.view, true); });
+            });
+
+            // initial view: ?view=… in the link, then the last choice, then the screen width
+            var initial = null;
+            try { initial = new URL(window.location.href).searchParams.get('view'); } catch (e) {}
+            if (!views[initial]) {
+                try { initial = localStorage.getItem('asterion-view'); } catch (e) {}
+            }
+            if (!views[initial]) {
+                initial = window.matchMedia('(max-width: 768px)').matches ? 'mobile' : 'desktop';
+            }
+            setView(initial, false);
+        })();
+    </script>
 </body>
 </html>

@@ -8,6 +8,9 @@ on:
       - '**.bib'
       - 'figures/**'
       - 'preamble/**'
+      - '.latexmkrc'
+      - 'index.html'
+      - '.github/workflows/**'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -25,23 +28,15 @@ jobs:
           mkdir -p build/chapters/dodatky
           mkdir -p build/preamble/{debug,environments,general,hacks,layout,math,misc,references,user}
       
-      - name: Create .latexmkrc
-        run: |
-          cat > .latexmkrc << 'EOF'
-          $pdflatex = 'lualatex -synctex=1 -interaction=nonstopmode -shell-escape %O %S';
-          $pdf_mode = 1;
-          $out_dir = 'build';
-          $bibtex = 'biber %O %B';
-          $max_repeat = 5;
-          $continuous = 0;
-          EOF
-      
+      # both editions (print/desktop and phone), with the repository's .latexmkrc (LuaLaTeX, out_dir build)
       - name: Compile LaTeX document
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: main.tex
+          root_file: |
+            main.tex
+            mobile.tex
           compiler: latexmk
-          args: -pdf
+          args: -file-line-error -interaction=nonstopmode
           working_directory: .
       
       - name: Upload PDF artifact

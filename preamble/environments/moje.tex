@@ -46,6 +46,7 @@
         colframe=#4,
         title={#2\IfValueT{##1}{ \textmd{(##1)}}.},
         list entry={\IfValueTF{##1}{##1}{#2}},% name of the box in a list (if it is added to one)
+        bookmark={#2\IfValueT{##1}{: ##1}},% PDF outline entry under the current section (phone navigation)
         overlay first={\asterionboxcontinues{#4}},
         overlay middle={\asterionboxcontinued{#4}{#2}{##1}\asterionboxcontinues{#4}},
         overlay last={\asterionboxcontinued{#4}{#2}{##1}},
@@ -88,7 +89,20 @@
 \tcbset{
     asterion pravidlo/.style={phantom={\asterionaddtolist{pravidla}}},
     asterion prozatimni/.style={phantom={\asterionaddtolist{prozatimni}}},
-    asterion predmet/.style={phantom={\asterionaddtolist{\predmetlist}}},
+    asterion predmet/.style={phantom={\asterionaddtolist{\predmetlist}}, statblock},
+    asterion specialita/.style={statblock},
+}
+
+%%% Stat blocks: in `predmet` and `specialita` boxes the list of fields ("Popis:", "Výdrž:", …)
+%%   has no bullets, a hanging indent and tight spacing, so a box is compact and easy to scan;
+%%   nested lists (e.g. under "Vlastnosti:") keep their bullets
+\tcbset{
+    statblock/.style={before upper app={%
+        \setlist[itemize,1]{label={}, leftmargin=1em, itemindent=-1em, labelsep=0pt,
+                            topsep=0.2\baselineskip, itemsep=0.1\baselineskip, parsep=0pt}%
+        \setlist[itemize,2]{label=\textbullet, leftmargin=1.4em, itemindent=0pt, labelsep=0.5em,
+                            topsep=0pt, itemsep=0pt, parsep=0pt}%
+    }},
 }
 %% add a rule that is not in a `pravidlo` box (e.g. a whole subsection) to the list of rules,
 %% linking to the current place: `\pravidlovprehledu{Fateův fraktál}`
