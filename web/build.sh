@@ -192,7 +192,7 @@ for slug in "${built[@]}"; do
 done > "$TMP/epub.tex"
 epub_in=("$TMP/epub.tex")
 pandoc -f latex -t epub3 "${common[@]}" -M page="" \
-    -M title="Fate Core: Asterion Hack" -M author="Racochejl a kol." -M date="$VERSION" \
+    -M title="Fate Core: Asterion Hack" -M author="Racochejl a kol." -M date="$(date +%Y-%m-%d)" -M description="$VERSION" \
     --toc --toc-depth=2 --split-level=1 --css="$WEB/assets/epub.css" \
     --epub-cover-image="$ROOT/figures/logo.png" --resource-path="$OUT" \
     "${epub_in[@]}" -o "$EPUBFILE" 2> "$TMP/epub.err" || die "pandoc failed on the EPUB"

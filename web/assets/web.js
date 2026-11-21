@@ -151,6 +151,12 @@
   // lower case without diacritics; the text is precomposed (NFC), so positions stay aligned
   function norm(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
   function words(q) { return norm(q).split(/\s+/).filter(function (w) { return w.length > 0; }); }
+  // Czech inflection: one final vowel is dropped from words of 4+ letters, so "úcta" also finds
+  // "úcty" and "potíže" finds "potíží"; a hit is then marked up to the end of its word
+  function stem(w) { return w.length >= 4 ? w.replace(/[aeiouy]$/, "") : w; }
+  function terms(q) { return words(q).map(stem); }
+  var letter = /[\p{L}\p{N}]/u;
+  function wordEnd(s, i) { while (i < s.length && letter.test(s.charAt(i))) i++; return i; }
   function scope() {
     for (var i = 0; i < scopes.length; i++) if (scopes[i].checked) return scopes[i].value;
     return "all";
@@ -187,7 +193,7 @@
   function highlight(text, normText, ws) {
     var marks = [];
     ws.forEach(function (w) {
-      for (var at = normText.indexOf(w); at >= 0; at = normText.indexOf(w, at + w.length)) marks.push([at, at + w.length]);
+      for (var at = normText.indexOf(w); at >= 0; at = normText.indexOf(w, at + w.length)) marks.push([at, wordEnd(normText, at + w.length)]);
     });
     marks.sort(function (a, b) { return a[0] - b[0]; });
     var out = "", pos = 0;
@@ -200,7 +206,7 @@
   }
 
   function run() {
-    var q = input.value.trim(), ws = words(q);
+    var q = input.value.trim(), ws = terms(q);
     results.innerHTML = ""; active = -1;
     if (!ws.length) { status.textContent = ""; return; }
     load().then(function (idx) {
@@ -301,16 +307,19 @@
     var old = document.querySelectorAll("mark.search-hit");
     for (var i = 0; i < old.length; i++) old[i].replaceWith(document.createTextNode(old[i].textContent));
     var main = document.getElementById("text");
-    var ws = q ? words(q) : [];
+    var ws = q ? terms(q) : [];
     if (!main || !ws.length) return;
     main.normalize();
-    // the whole phrase if it occurs ("cit pro potize"), otherwise the single words from 3 letters
-    // up; either only at the start of a word, so "pro" does not light up inside "protivník"
-    var phrase = ws.join(" ");
-    if (ws.length > 1 && norm(main.textContent).indexOf(phrase) >= 0) ws = [phrase];
-    else ws = ws.filter(function (w) { return w.length > 2; });
-    if (!ws.length) return;
-    var letter = /[\p{L}\p{N}]/u;
+    // the whole phrase if it occurs ("etika ucty" in "Etika úcty k životu"), otherwise the single
+    // words from 3 letters up; only at the start of a word ("pro" not inside "protivník"), and
+    // each hit runs to the end of its word (the word stems lack their endings)
+    var phrase = null;
+    if (ws.length > 1) {
+      var re = new RegExp(ws.map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("\\p{L}*\\s+"), "u");
+      if (re.test(norm(main.textContent))) phrase = new RegExp(re.source, "gu");
+    }
+    if (!phrase) ws = ws.filter(function (w) { return w.length > 2; });
+    if (!phrase && !ws.length) return;
     var walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
       acceptNode: function (n) {
         return n.parentNode.closest("script, style, .sidenote-number") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
@@ -320,10 +329,16 @@
     while (walker.nextNode()) nodes.push(walker.currentNode);
     nodes.forEach(function (node) {
       var text = node.nodeValue, nt = norm(text), hits = [];
-      ws.forEach(function (w) {
+      if (phrase) {
+        phrase.lastIndex = 0;
+        for (var m; (m = phrase.exec(nt)); ) {
+          if (m.index > 0 && letter.test(nt.charAt(m.index - 1))) continue;
+          hits.push([m.index, wordEnd(nt, m.index + m[0].length)]);
+        }
+      } else ws.forEach(function (w) {
         for (var at = nt.indexOf(w); at >= 0; at = nt.indexOf(w, at + w.length)) {
           if (at > 0 && letter.test(nt.charAt(at - 1))) continue;          // inside a word
-          hits.push([at, at + w.length]);
+          hits.push([at, wordEnd(nt, at + w.length)]);
         }
       });
       if (!hits.length) return;

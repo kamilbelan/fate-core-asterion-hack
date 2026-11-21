@@ -14,6 +14,7 @@ local MAP, IMAGES, PAGE, BUILT = {}, {}, "", {}
 local SEARCH                                   -- web: file to append this page's search entries to
 local EPUB = FORMAT:match("epub") ~= nil
 local boxcount, notecount = 0, 0
+local USED_IDS = {}
 
 local BOXES = {
   pravidlo   = "Pravidlo",
@@ -178,6 +179,11 @@ function Div(el)
   boxcount = boxcount + 1
   local plain = name and pandoc.utils.stringify(name) or ""
   local id = slug(kind .. "-" .. (plain ~= "" and plain or tostring(boxcount)))
+  -- the same box name can occur twice (e.g. a speciality of two povolání): keep ids unique,
+  -- which matters in the EPUB, where all chapters are one document
+  local base, n = id, 1
+  while USED_IDS[id] do n = n + 1; id = base .. "-" .. n end
+  USED_IDS[id] = true
   local title = { pandoc.Strong({ pandoc.Str(label) }) }
   if plain ~= "" then
     title[#title + 1] = pandoc.Space()
