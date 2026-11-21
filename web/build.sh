@@ -134,7 +134,7 @@ done
 # --- contents page -------------------------------------------------------------------------
 {
     printf '# Fate Core: Asterion Hack\n\n'
-    printf -- '[↩︎ O knize a ke stažení](../)\n\n'
+    printf -- '[↩︎ O textu a ke stažení](../)\n\n'
     printf 'Pravidla Fate Core upravená pro svět Asterionu. Webová verze je zatím **prototyp**: '
     printf 'převedené kapitoly jsou odkazy, ostatní najdete v PDF.\n\n'
     printf '## Obsah\n\n'
@@ -163,7 +163,7 @@ for slug in "${built[@]}"; do
 done > "$TMP/epub.tex"
 epub_in=("$TMP/epub.tex")
 pandoc -f latex -t epub3 "${common[@]}" -M page="" \
-    -M title="Fate Core: Asterion Hack" -M author="Mosche Haus a kol." -M date="$VERSION" \
+    -M title="Fate Core: Asterion Hack" -M author="Racochejl a kol." -M date="$VERSION" \
     --toc --toc-depth=2 --split-level=1 --css="$WEB/assets/epub.css" \
     --epub-cover-image="$ROOT/figures/logo.png" --resource-path="$OUT" \
     "${epub_in[@]}" -o "$EPUBFILE" 2> "$TMP/epub.err" || die "pandoc failed on the EPUB"
