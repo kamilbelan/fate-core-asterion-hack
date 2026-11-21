@@ -20,7 +20,7 @@
 		<link rel="stylesheet" href="assets/web.css">
 		<script src="assets/web.js" defer></script>
 	</head>
-	<body>
+	<body data-page="$slug$">
 		<a class="skip-link" href="#text">Přejít na text</a>
 
 		<header class="site-header">
@@ -34,6 +34,10 @@
 					<span>Obsah</span>
 				</button>
 				<a class="site-title" href="index.html">$booktitle$</a>
+				<button type="button" class="header-button search-button" id="search-button" aria-controls="search" aria-expanded="false" hidden>
+					<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+					<span class="search-button__label">Hledat</span>
+				</button>
 				<button type="button" class="header-button theme-button" id="theme-button" hidden>
 					<svg class="icon icon-auto" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path class="fill" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
 					<svg class="icon icon-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>
@@ -42,6 +46,26 @@
 				</button>
 			</div>
 		</header>
+
+		<!-- full-text search (web.js; the index is assets/search.json, made by build.sh) -->
+		<div class="search" id="search" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
+			<div class="search__panel">
+				<div class="search__head">
+					<h2 class="visually-hidden" id="search-title">Hledat v textu</h2>
+					<input type="search" id="search-input" class="search__input" placeholder="Hledat…" autocomplete="off" spellcheck="false" aria-describedby="search-status">
+					<button type="button" class="header-button search__close" id="search-close" aria-label="Zavřít hledání">
+						<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+					</button>
+				</div>
+				<fieldset class="search__scope">
+					<legend class="visually-hidden">Kde hledat</legend>
+					<label><input type="radio" name="search-scope" value="all" checked> Celý text</label>
+					<label><input type="radio" name="search-scope" value="page"> Tato kapitola</label>
+				</fieldset>
+				<p class="search__status" id="search-status" aria-live="polite"></p>
+				<ol class="search__results" id="search-results"></ol>
+			</div>
+		</div>
 
 		<div class="page">
 			<main id="text" tabindex="-1">
@@ -82,15 +106,8 @@
 			</nav>
 
 			<footer class="site-footer">
-				<center>
-					<p class="downloads__label">Stáhnout celý text</p>
-					<ul class="downloads">
-						<li><a href="../main.pdf">PDF <small>A4</small></a></li>
-						<li><a href="../mobile.pdf">PDF <small>pro mobil</small></a></li>
-						<li><a href="../asterion.epub">EPUB <small>na čtečky</small></a></li>
-					</ul>
-					<p class="version"><a href="index.html">$booktitle$</a>, $version$</p>
-				</center>
+				<p>Stáhnout: <a href="../main.pdf">PDF A4</a> · <a href="../mobile.pdf">PDF pro mobil</a> · <a href="../asterion.epub">EPUB</a></p>
+				<p><a href="index.html">$booktitle$</a>, $version$ · <a href="https://kamilbelan.net/">kamilbelan.net</a></p>
 			</footer>
 		</div>
 	</body>

@@ -29,6 +29,27 @@ my $tex = do { local $/; <STDIN> };
 $tex =~ s/\A.*?\\begin\{document\}//s;
 $tex =~ s/\\end\{document\}.*\z//s;
 $tex =~ s/(?<!\\)%[^\n]*//g;                                   # comments
+$tex =~ s/\\begin\{comment\}.*?\\end\{comment\}//gs;            # commented-out blocks
+$tex =~ s/\\todo(?:\[[^\]]*\])?(\{(?:[^{}]++|(?1))*\})//g;     # to-dos: not in the web edition
+
+# --- 0: every aspect and trick gets an anchor -------------------------------------------
+# `\asp{…}` -> `\textcolor{asp-<slug>-<n>}{…}`: asterion.lua turns it into a span with class
+# `asp` and that id, so the appendix lists (rejstrik.pl) can link to each occurrence. The
+# occurrences are written to $TERMS_FILE (kind, id, text), the lists' only source.
+if (my $slug = $ENV{SLUG}) {
+    my %n = (asp => 0, trk => 0);
+    my @terms;
+    $tex =~ s{\\(asp|trk)(?=(\{((?:[^{}]++|(?2))*)\}))}{
+        my ($kind, $text) = ($1, $3);
+        my $id = "$kind-$slug-" . ++$n{$kind};
+        push @terms, "$kind\t$id\t$text";
+        "\\textcolor{$id}";
+    }ge;
+    if (my $file = $ENV{TERMS_FILE}) {
+        open my $fh, '>', $file or die "preprocess: $file: $!\n";
+        print $fh map { s/\n/ /gr . "\n" } @terms;
+    }
+}
 
 # --- 1: box names ------------------------------------------------------------------
 my $BOXES = qr/pravidlo|predmet|povolani|Real|specialita|prozatimni/;

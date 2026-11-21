@@ -18,7 +18,8 @@ resizes images. GitHub Actions runs it after the PDFs (`.github/workflows/latex.
 |---|---|
 | `lib/labelmap.pl` | chapters in order (from `main.tex`) and every `\label` → page, anchor, title |
 | `lib/preprocess.pl` | rewrites what pandoc's LaTeX reader would drop (see its header) |
-| `lib/asterion.lua` | pandoc filter: terms, boxes, `\Cref` links, margin notes, tables, images |
+| `lib/asterion.lua` | pandoc filter: terms, boxes, `\Cref` links, margin notes, tables, images; writes the full-text search index (`assets/search.json`, used by the search in `web.js`) |
+| `lib/rejstrik.pl` | the appendix lists of all aspects and tricks, linking to every occurrence |
 | `templates/page.html` | page template (header, contents drawer, theme switch, footer) |
 | `assets/web.css`, `assets/web.js` | design of the web edition |
 | `assets/epub.css` | plain styling for the EPUB (reader apps override most of it) |

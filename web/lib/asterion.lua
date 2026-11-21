@@ -11,6 +11,7 @@
 -- does not understand, and a silent build must mean nothing was lost.
 
 local MAP, IMAGES, PAGE, BUILT = {}, {}, "", {}
+local SEARCH                                   -- web: file to append this page's search entries to
 local EPUB = FORMAT:match("epub") ~= nil
 local boxcount, notecount = 0, 0
 
@@ -43,7 +44,8 @@ function Meta(m)
   IMAGES = dofile(pandoc.utils.stringify(m.images))
   PAGE   = pandoc.utils.stringify(m.page or "")
   for s in pandoc.utils.stringify(m.built or ""):gmatch("[^,]+") do BUILT[s] = true end
-  m.labelmap, m.images, m.page, m.built = nil, nil, nil, nil
+  SEARCH = m.searchindex and pandoc.utils.stringify(m.searchindex) or nil
+  m.labelmap, m.images, m.page, m.built, m.searchindex = nil, nil, nil, nil, nil
   return m
 end
 
@@ -53,6 +55,10 @@ function Span(el)
   if not color then return nil end
   if TERMS[color] then
     return pandoc.Span(el.content, pandoc.Attr("", { color }))
+  end
+  local kind = color:match("^(%a+)%-[%w-]+%-%d+$")          -- asp-akce-3: an anchored occurrence
+  if kind and TERMS[kind] then
+    return pandoc.Span(el.content, pandoc.Attr(color, { kind }))
   end
   local n = color:match("^policko%-(%d+)$")
   if n then                                               -- \policko{+1}{12}: 12 boxes
@@ -73,8 +79,10 @@ function Link(el)
   if not ref then
     -- links between chapters ("akce.html", e.g. in the lists of terms): inside the EPUB they
     -- point to the chapter's heading in the same book
-    local page = el.target:match("^([%w-]+)%.html$")
-    if EPUB and page then el.target = "#kapitola-" .. page end
+    if EPUB then
+      local page, frag = el.target:match("^([%w-]+)%.html#?(.*)$")
+      if page then el.target = "#" .. (frag ~= "" and frag or ("kapitola-" .. page)) end
+    end
     return el
   end
   local t = MAP[ref]
@@ -199,9 +207,67 @@ function Inlines(inlines)
   return inlines
 end
 
+-- full-text search (web only): one entry per section (text up to the next heading) and one per
+-- box, as JSON lines appended to SEARCH; build.sh joins them into assets/search.json.
+--   p page, c chapter title, a anchor ("" = top of the page), t title, x plain text
+local function plain(blocks)
+  local doc = pandoc.Pandoc(blocks):walk({
+    RawInline = function() return {} end,                   -- margin-note markup, not text
+    RawBlock  = function() return {} end,
+  })
+  -- pandoc's plain-text writer keeps the spaces between list items, cells and paragraphs;
+  -- list markers and table rules are dropped, whitespace collapsed
+  local text = pandoc.write(doc, "plain", { wrap_text = "none" })
+  text = ("\n" .. text):gsub("\n[ \t]*[%-%*]%s+", "\n"):gsub("\n[ \t]*%(?%w+[%.%)]%s+", "\n")
+  text = text:gsub("%-%-%-+", " "):gsub("%s+", " ")
+  return (text:gsub("^ ", ""):gsub(" $", ""))
+end
+
+local function is_box(b) return b.t == "Div" and b.classes:includes("box") and b.identifier ~= "" end
+
+function Pandoc(doc)
+  if EPUB or not SEARCH then return nil end
+  local entries, chapter, cur = {}, "", nil
+  local function flush()
+    if cur and cur.x ~= "" then entries[#entries + 1] = cur end
+  end
+  local function add_box(b)
+    local title, body = "", {}
+    for _, c in ipairs(b.content) do
+      if c.t == "Div" and c.classes:includes("box-title") then title = plain(c.content)
+      else body[#body + 1] = c end
+    end
+    entries[#entries + 1] = { p = PAGE, c = chapter, a = b.identifier, t = title, x = plain(body) }
+  end
+  for _, b in ipairs(doc.blocks) do
+    if b.t == "Header" then
+      flush()
+      local title = plain({ pandoc.Plain(b.content) })
+      if b.level == 1 then chapter = title end
+      cur = { p = PAGE, c = chapter, a = (b.level == 1) and "" or b.identifier, t = title, x = "" }
+    elseif is_box(b) then
+      add_box(b)                                            -- its own result, not repeated in the section
+    elseif b.t == "Figure" or (b.t == "Div" and b.classes:includes("rejstrik")) then
+      -- illustrations: nothing to search (their caption is only the credit link "zdroj");
+      -- the generated lists of aspects and tricks repeat what the chapters already contain
+    else
+      cur = cur or { p = PAGE, c = chapter, a = "", t = chapter, x = "" }
+      b:walk({ Div = function(d) if is_box(d) then add_box(d) end end })   -- boxes inside lists
+      local text = plain({ b })
+      if text ~= "" then cur.x = (cur.x == "" and "" or cur.x .. " ") .. text end
+    end
+  end
+  flush()
+  local f = assert(io.open(SEARCH, "a"))
+  for _, e in ipairs(entries) do f:write(pandoc.json.encode(e), "\n") end
+  f:close()
+  return nil
+end
+
 return {
   { Meta = Meta },
   { Inlines = Inlines },
   { Span = Span, Link = Link, Image = Image, Note = Note, RawInline = RawInline,
     RawBlock = RawBlock, Table = Table, Div = Div, Header = Header },
+  { Pandoc = Pandoc },
 }

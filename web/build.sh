@@ -44,9 +44,22 @@ while IFS=$'\t' read -r file slug title; do
 done < "$TMP/chapters.tsv"
 [ ${#built[@]} -gt 0 ] || die "no chapters selected (WEB_CHAPTERS=$CHAPTERS)"
 BUILT="$(IFS=,; echo "${built[*]}")"
-# appendix lists of all aspects and tricks (the PDF builds them in LuaLaTeX; see rejstrik.pl)
-perl "$LIB/rejstrik.pl" "$ROOT" "$TMP/chapters.tsv" "$BUILT" "$TMP"
 is_built() { [[ ",$BUILT," == *",$1,"* ]]; }
+
+# --- preprocessing of every chapter (also the ones without a web page: the lists of terms
+# cover the whole text). It anchors each \asp/\trk and lists the occurrences in <slug>.terms;
+# the appendix lists of aspects and tricks are made from those (the PDF builds them in
+# LuaLaTeX), then put into the chapter that holds them.
+while IFS=$'\t' read -r file slug title; do
+    SLUG="$slug" TERMS_FILE="$TMP/$slug.terms" \
+        perl "$LIB/preprocess.pl" < "$ROOT/chapters/$file.tex" > "$TMP/$slug.tex"
+done < "$TMP/chapters.tsv"
+perl "$LIB/rejstrik.pl" "$TMP/chapters.tsv" "$BUILT" "$TMP"
+while IFS=$'\t' read -r file slug title; do
+    grep -q '\\vypisrejstrik' "$ROOT/chapters/$file.tex" || continue
+    SLUG="$slug" REJSTRIK_DIR="$TMP" \
+        perl "$LIB/preprocess.pl" < "$ROOT/chapters/$file.tex" > "$TMP/$slug.tex"
+done < "$TMP/chapters.tsv"
 
 # --- images: every \includegraphics of the built chapters, sized for the web -------------
 echo "return {" > "$TMP/images.lua"
@@ -96,10 +109,10 @@ page_vars=(--template="$WEB/templates/page.html" -V lang=cs
 # --- chapter pages ------------------------------------------------------------------------
 mapfile -t order < <(cut -f2 "$TMP/chapters.tsv")
 prev=""; status=0
+: > "$TMP/search.jsonl"                                     # full-text search index (asterion.lua)
 for i in "${!order[@]}"; do
     slug="${order[$i]}"; is_built "$slug" || continue
     IFS=$'\t' read -r file _ title < <(awk -F'\t' -v s="$slug" '$2==s' "$TMP/chapters.tsv")
-    REJSTRIK_DIR="$TMP" perl "$LIB/preprocess.pl" < "$ROOT/chapters/$file.tex" > "$TMP/$slug.tex"
 
     next=""
     for j in "${order[@]:$((i + 1))}"; do
@@ -108,8 +121,8 @@ for i in "${!order[@]}"; do
         fi
     done
 
-    pandoc -f latex -t html5 -s "${common[@]}" "${page_vars[@]}" -M page="$slug" \
-        --toc --toc-depth=3 -M pagetitle="$title" \
+    pandoc -f latex -t html5 -s "${common[@]}" "${page_vars[@]}" -M page="$slug" -V slug="$slug" \
+        -M searchindex="$TMP/search.jsonl" --toc --toc-depth=3 -M pagetitle="$title" \
         -V nav="$(nav_html "$slug")" -V prev="$prev" -V next="$next" \
         "$TMP/$slug.tex" -o "$OUT/$slug.html" 2> "$TMP/$slug.err" || die "pandoc failed on $file"
     if [ -s "$TMP/$slug.err" ]; then cat "$TMP/$slug.err" >&2; status=1; fi
@@ -142,6 +155,10 @@ for i in "${!order[@]}"; do
     check "sidenote" "$(grep -oE '\\sidenote(mark)?\b' <<< "$body" | wc -l)" "$(grep -o 'class="sidenote"' <<< "$html" | wc -l)"
     printf '  %-28s -> %s\n' "chapters/$file.tex" "${OUT#"$ROOT"/}/$slug.html"
 done
+
+# --- search index: one JSON array of all the entries ----------------------------------------
+{ printf "["; paste -sd, "$TMP/search.jsonl"; printf "]\n"; } > "$OUT/assets/search.json"
+printf '  %-28s -> %s (%s entries)\n' "(search index)" "${OUT#"$ROOT"/}/assets/search.json" "$(wc -l < "$TMP/search.jsonl")"
 
 # --- contents page -------------------------------------------------------------------------
 {
