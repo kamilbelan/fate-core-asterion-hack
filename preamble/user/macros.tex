@@ -8,8 +8,17 @@
 %%% Game terms: one consistent style per kind (readable on a phone and in greyscale print)
 %%   aspect: bold italic | skill: sans semibold | trick: italic in TrickColor
 %%   action: small caps  | peripetie: sans bold
-%% skills: Source Sans Semibold scaled to the x-height of the text, so a skill name does not look bigger
-\newfontfamily\dovfont{SourceSansPro-Semibold}[Extension=.otf, Scale=MatchLowercase]
+%% skills: Source Sans Semibold scaled to the x-height of the text, so a skill name does not look bigger.
+%%   The font files are named differently across TeX Live versions: "Source Sans Pro" (up to 2025)
+%%   became "Source Sans 3" (2026, used by the CI), so both names are tried; if neither is found,
+%%   the bold sans of the headings is used instead of failing the build.
+\IfFontExistsTF{SourceSansPro-Semibold.otf}{%
+    \newfontfamily\dovfont{SourceSansPro-Semibold.otf}[Scale=MatchLowercase]%
+}{\IfFontExistsTF{SourceSans3-Semibold.otf}{%
+    \newfontfamily\dovfont{SourceSans3-Semibold.otf}[Scale=MatchLowercase]%
+}{%
+    \NewDocumentCommand{\dovfont}{}{\sffamily\bfseries}%
+}}
 \newcommand{\asp}[1]{\textbf{\textit{#1}}}       % aspect
 \newcommand{\dov}[1]{{\dovfont #1}}              % skill
 \newcommand{\trk}[1]{\textcolor{TrickColor}{\textit{#1}}} % trick (no underline: on screen it looks like a link)
