@@ -11,11 +11,28 @@
 %% `clearempty` option removes page numbers from empty pages when using `\cleardoublepage`
 \usepackage[newparttoc, clearempty]{titlesec}
 
-%% NOTE: also include `\phantomsection` so that hyperlink anchors are properly placed 
+%% FIX: zref-clever recognises the reference type from \refstepcounter, but titlesec
+%%   runs \refstepcounter inside a group, so the \@currentcounter assignment is local
+%%   and reverts once the group ends. For unnumbered levels, \refstepcounter is skipped
+%%   entirely. In both cases, \label then inherits the type of the last globally stepped
+%%   counter (e.g. sidenote). We fix this by globally setting \@currentcounter in the
+%%   before-code of each \titleformat. For numbered levels, this is harmless (same value).
+%%
+%% Unnumbered headings (starred, or deeper than `secnumdepth`) have no number of their own,
+%%   so \label would pick up the last stepped number (e.g. a sidenote's). `\labelfromtitle` (the last
+%%   argument of each \titleformat, receives the title) makes their label text the title instead,
+%%   so \Cref prints e.g. "Sekce Fateový fraktál"; numbered headings keep their number.
+\makeatletter
+\NewDocumentCommand{\fixzreftype}{m}{\gdef\@currentcounter{#1}}
+\NewDocumentCommand{\labelfromtitle}{m}{\ifttl@label\else\protected@xdef\@currentlabel{#1}\fi#1}
+\makeatother
+
+%% NOTE: also include `\phantomsection` so that hyperlink anchors are properly placed
 %%         (or modern `\MakeLinkTarget`)          (even for non-numbered subsections)
-\titleformat{\section}   {\MakeLinkTarget[section]{}\Large\sffamily\bfseries}{\thesection}   {0.8em}{}
-\titleformat{\subsection}{\MakeLinkTarget[subsection]{}\large\sffamily\bfseries}{\thesubsection}{0.8em}{}
-\titleformat{\paragraph}[runin]{\MakeLinkTarget[paragraph]{}\normalsize\sffamily\bfseries}{\theparagraph}{0em}{}
+\titleformat{\section}      {\fixzreftype{section}\MakeLinkTarget[section]{}\Large\sffamily\bfseries}{\thesection}{0.8em}{\labelfromtitle}
+\titleformat{\subsection}   {\fixzreftype{subsection}\MakeLinkTarget[subsection]{}\large\sffamily\bfseries}{\thesubsection}{0.8em}{\labelfromtitle}
+\titleformat{\subsubsection}{\fixzreftype{subsubsection}\MakeLinkTarget[subsubsection]{}\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{\labelfromtitle}% titlesec's default look
+\titleformat{\paragraph}[runin]{\fixzreftype{paragraph}\MakeLinkTarget[paragraph]{}\normalsize\sffamily\bfseries}{\theparagraph}{0em}{\labelfromtitle}
 
 %% Part title (page) formatting
 \titleformat{\part}[display]

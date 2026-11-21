@@ -10,6 +10,27 @@
     noabbrev % do not use abbreviations
 }
 
+%% Czech reference type names (zref-clever has no Czech language file),
+%% so that \Cref prints e.g. "Kapitola 3", "Sekce 6.5"
+%% \czechCleverTypeName{<type>}{<singular>}{<plural>}  (lowercase; capitalized forms are derived)
+\NewDocumentCommand{\czechCleverTypeName}{mmm}{%
+    \zcRefTypeSetup{#1}{
+        name-sg = #2, Name-sg = \MakeTitlecase{#2},
+        name-pl = #3, Name-pl = \MakeTitlecase{#3},
+    }%
+}
+\czechCleverTypeName{chapter}{kapitola}{kapitoly}
+\czechCleverTypeName{appendix}{dodatek}{dodatky}
+\czechCleverTypeName{section}{sekce}{sekce}
+\czechCleverTypeName{subsection}{sekce}{sekce}
+\czechCleverTypeName{subsubsection}{sekce}{sekce}
+\czechCleverTypeName{paragraph}{odstavec}{odstavce}
+\czechCleverTypeName{figure}{obrázek}{obrázky}
+\czechCleverTypeName{table}{tabulka}{tabulky}
+\czechCleverTypeName{sidenote}{poznámka}{poznámky}
+\czechCleverTypeName{footnote}{poznámka}{poznámky}
+\czechCleverTypeName{page}{strana}{strany}
+
 %% Fallbacks for PDF metadata commands
 \providecommand*{\ThesisAuthorPlaintext}{\ThesisAuthor}
 \providecommand*{\ThesisTitlePlaintext}{\ThesisTitle}
@@ -18,7 +39,10 @@
 \hypersetup{
     linktoc = all,         % whole entry in TOC is clickable link
     colorlinks = true,     % color links/references (if not using boxed variants provided by \Cref{...})
-    urlcolor = [rgb]{0.82,0.25,0.08}, % tweak the default URL color
+    linkcolor = FateBlue,  % all links in the blue of the chapter headings
+    urlcolor  = FateBlue,
+    citecolor = FateBlue,
+    filecolor = FateBlue,
     pdfborder = {0 0 0},   % to disable borders/frames around links (even when colorlinks=false)
     pdflinkmargin = 1.0pt, % extra link area around the text box (default 1pt)
     pdfdisplaydoctitle,    % https://tex.stackexchange.com/a/435434/120853
