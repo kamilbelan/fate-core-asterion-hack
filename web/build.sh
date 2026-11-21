@@ -148,14 +148,14 @@ done
     printf '# Fate Core: Asterion Hack\n\n'
     printf -- '[↩︎ O textu a ke stažení](../)\n\n'
     printf 'Pravidla Fate Core upravená pro svět Asterionu. '
-    printf 'Všechny kapitoly jsou níže, ke stažení je i PDF a EPUB.\n\n'
+    printf 'Všechny kapitoly jsou níže, ke stažení jsou i verze v PDF a EPUB.\n\n'
     printf '## Obsah\n\n'
     while IFS=$'\t' read -r file slug title; do
         if is_built "$slug"; then printf -- '- [%s](%s.html)\n' "$title" "$slug"
         else printf -- '- %s *(jen v PDF)*\n' "$title"; fi
     done < "$TMP/chapters.tsv"
     printf '\n## Ke stažení\n\n'
-    printf -- '- [PDF (A4)](../main.pdf)\n- [PDF pro mobil](../mobile.pdf)\n- [EPUB](../asterion.epub)\n'
+	printf -- '- [pdf (A4)](../main.pdf)\n- [pdf (pro mobil))](../mobile.pdf)\n- [epub](../asterion.epub)\n'
 } > "$TMP/index.md"
 pandoc -f markdown -t html5 -s "${page_vars[@]}" -M pagetitle="Obsah" \
     -V nav="$(nav_html "")" -V next="<a href=\"${built[0]}.html\" rel=\"next\">$(awk -F'\t' -v s="${built[0]}" '$2==s{print $3}' "$TMP/chapters.tsv")</a>" \
