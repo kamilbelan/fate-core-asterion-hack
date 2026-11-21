@@ -69,7 +69,6 @@
   --img-filter: none;
 
   /* colours: game terms */
-  --trick: rgb(0 102 92);
   --policko-border: #4a4a50;
   --policko-bg: #ffffff;
 
@@ -104,7 +103,6 @@
   --backdrop: rgb(0 0 0 / 0.6);
   --shadow: rgb(0 0 0 / 0.5);
   --img-filter: brightness(0.9);
-  --trick: #4cc2b3;
   --policko-border: #a9a69f;
   --policko-bg: transparent;
   --pravidlo-bg: #24262a;   --pravidlo-rule: #8c8c8c;   --pravidlo-ink: #cfcfcf;
@@ -137,7 +135,6 @@
     --backdrop: rgb(0 0 0 / 0.6);
     --shadow: rgb(0 0 0 / 0.5);
     --img-filter: brightness(0.9);
-    --trick: #4cc2b3;
     --policko-border: #a9a69f;
     --policko-bg: transparent;
     --pravidlo-bg: #24262a;   --pravidlo-rule: #8c8c8c;   --pravidlo-ink: #cfcfcf;
@@ -433,11 +430,16 @@ main img { filter: var(--img-filter); }
 /* ===== 5. Book content ================================================================== */
 
 /* -- game terms (inline) -- */
-.asp { font-weight: 700; font-style: italic; }                              /* aspect */
+/* style A, no colour: the fiction in italic serif, the rules in sans, procedures in small caps */
+.asp { font-style: italic; }                                                 /* aspect: italic + a card */
+.asp::before {                     /* in Fate aspects are written on index cards; drawn, not text */
+  content: ""; display: inline-block; width: 0.6em; height: 0.4em; margin-right: 0.22em;
+  border: 1px solid currentColor; border-radius: 1px; opacity: 0.5; vertical-align: 0.05em;
+}
 .dov { font-family: var(--font-sans); font-weight: 600; font-size: 0.92em; } /* skill (dovednost) */
-.trk { font-style: italic; color: var(--trick); }                            /* trick */
+.trk { font-style: italic; font-weight: 700; }                               /* trick */
 .akc { font-variant-caps: small-caps; letter-spacing: 0.02em; }              /* action */
-.per { font-family: var(--font-sans); font-weight: 700; font-size: 0.92em; } /* peripetie */
+.per { font-family: var(--font-sans); font-weight: 600; font-variant-caps: all-small-caps; letter-spacing: 0.06em; } /* peripetie */
 .poznamka { color: var(--muted); }                                           /* aside text */
 
 /* -- boxes -- */

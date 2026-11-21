@@ -6,8 +6,10 @@
 \usepackage{hologo} % Provides *TeX logos (for example `\hologo{pdfLaTeX}`)
 
 %%% Game terms: one consistent style per kind (readable on a phone and in greyscale print)
-%%   aspect: bold italic | skill: sans semibold | trick: italic in TrickColor
-%%   action: small caps  | peripetie: sans bold
+%%   style A, no colour (colour is for links and headings; works in greyscale print and EPUB):
+%%   the fiction in italic serif, the rules in sans, procedures in small caps
+%%   aspect: italic with a small card before it (in Fate aspects are written on index cards)
+%%   trick: bold italic | skill: sans semibold | action: small caps | peripetie: sans small caps
 %% skills: Source Sans Semibold scaled to the x-height of the text, so a skill name does not look bigger.
 %%   The font files are named differently across TeX Live versions: "Source Sans Pro" (up to 2025)
 %%   became "Source Sans 3" (2026, used by the CI), so both names are tried; if neither is found,
@@ -19,9 +21,17 @@
 }{%
     \NewDocumentCommand{\dovfont}{}{\sffamily\bfseries}%
 }}
-\newcommand{\asp}[1]{\asteriontermzapis{asp}{#1}\textbf{\textit{#1}}}       % aspect
+%% the card: thin, muted, x-height tall, tied to the first word; drawn, so searching and copying
+%% the text are not affected
+\NewDocumentCommand{\aspkarta}{}{%
+    \tikz[baseline=-0.04em]\draw[line width=0.35pt, draw=black!50, rounded corners=0.25pt] (0,0) rectangle (0.6em,0.4em);%
+    \nobreak\hspace{0.22em}\nobreak
+}
+\NewDocumentCommand{\aspstyl}{m}{\aspkarta\textit{#1}}  % look of an aspect (also in the lists)
+\NewDocumentCommand{\trkstyl}{m}{\textbf{\textit{#1}}} % look of a trick
+\newcommand{\asp}[1]{\asteriontermzapis{asp}{#1}\aspstyl{#1}}       % aspect
 \newcommand{\dov}[1]{{\dovfont #1}}              % skill
-\newcommand{\trk}[1]{\asteriontermzapis{trk}{#1}\textcolor{TrickColor}{\textit{#1}}} % trick (no underline: on screen it looks like a link)
+\newcommand{\trk}[1]{\asteriontermzapis{trk}{#1}\trkstyl{#1}}       % trick
 
 %%% Lists of all aspects and tricks in the appendix (`chapters/dodatky/rejstrik.tex`, Lua side in
 %%   `preamble/user/rejstrik.lua`): every \asp/\trk records its text and page in the .aux file,
@@ -35,7 +45,7 @@
 \NewDocumentCommand{\asteriontermin}{mmm}{%
     \directlua{asterion_rejstrik.add("\luaescapestring{#1}", "\luaescapestring{\detokenize{#2}}", "\luaescapestring{#3}")}%
 }
-\pdfstringdefDisableCommands{\def\asteriontermzapis#1#2{}}% no recording inside PDF bookmarks
+\pdfstringdefDisableCommands{\def\asteriontermzapis#1#2{}\def\aspkarta{}}% no recording, no card in PDF bookmarks
 %% `\vypisrejstrik{asp}` / `\vypisrejstrik{trk}`: the list (two columns on A4, one on the phone)
 \NewDocumentCommand{\vypisrejstrik}{m}{%
     \begin{multicols}{2}\raggedright\setlength{\parskip}{0pt plus 1pt}% compact: one line per entry
@@ -48,12 +58,12 @@
 }
 \NewDocumentCommand{\asterionrejstrikpolozka}{mmm}{%
     \par\hangindent=1em\hangafter=1\noindent
-    \ifstrequal{#1}{asp}{\textbf{\textit{#2}}}{\textcolor{TrickColor}{\textit{#2}}}%
+    \ifstrequal{#1}{asp}{\aspstyl{#2}}{\trkstyl{#2}}%
     \nobreak\enspace{\footnotesize\color{black!60}#3}\par
 }
 \NewDocumentCommand{\asterionrejstrikprazdny}{}{\emph{(Seznam se doplní při dalším překladu.)}\par}
 \newcommand{\akc}[1]{\textsc{#1}}                % action
-\newcommand{\per}[1]{\textbf{\sffamily #1}}      % peripetie
+\newcommand{\per}[1]{{\dovfont\addfontfeatures{Letters={SmallCaps,UppercaseSmallCaps}, LetterSpace=6}#1}} % peripetie
 
 %%% Image credits: `\zdrojobrazku{<url>}` under an illustration prints a small "zdroj" link
 %%   (instead of a numbered caption) and records the page and the site for the list of image
