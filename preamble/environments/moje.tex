@@ -36,15 +36,20 @@
         {\textbf{#2}\IfValueT{#3}{ (#3)} -- pokračování};%
 }
 
+%% Each box type also gets a hook style `asterion <env>` (empty by default), used below to give
+%% some types extra options, e.g. adding them to the lists printed after the TOC (see `toc.tex`).
 \NewDocumentCommand{\NewAsterionBox}{mmmm}{%
+    \tcbset{asterion #1/.style={}}%
     \NewTColorBox{#1}{o}{%
         asterionbox,
         colback=#3,
         colframe=#4,
         title={#2\IfValueT{##1}{ \textmd{(##1)}}.},
+        list entry={\IfValueTF{##1}{##1}{#2}},% name of the box in a list (if it is added to one)
         overlay first={\asterionboxcontinues{#4}},
         overlay middle={\asterionboxcontinued{#4}{#2}{##1}\asterionboxcontinues{#4}},
         overlay last={\asterionboxcontinued{#4}{#2}{##1}},
+        asterion #1,
     }%
 }
 
@@ -54,3 +59,37 @@
 \NewAsterionBox{predmet}{Předmět}{blue!10}{blue!70!black}
 \NewAsterionBox{povolani}{Povolání}{yellow!15}{yellow!70!black}
 \NewAsterionBox{Real}{Realistické hraní}{bloodred!10}{bloodred!70!black}
+%% speciality of a povolání (also zázraky, znamení); `[<name>, <level>]`
+\NewAsterionBox{specialita}{Specialita}{teal!10}{teal!60!black}
+%% a rule found or changed during play that is in force, but not yet written properly or still
+%% experimental (use `\todo{}` only for genuine to-dos)
+\NewAsterionBox{prozatimni}{Prozatímní pravidlo}{orange!12}{orange!75!black}
+
+%% povolání: title on its own line, "Svolení" etc. start below it
+\tcbset{asterion povolani/.style={attach title to upper={\par\noindent}}}
+
+%%% Lists of boxes printed after the TOC (`\contentsandlists` in `preamble/layout/toc.tex`)
+%%   pravidla    - all `pravidlo` boxes (+ rules written as plain text, see `\pravidlovprehledu`)
+%%   prozatimni  - all `prozatimni` boxes
+%%   zbrane      - `predmet` boxes of weapons and armour
+%%   predmety    - all other `predmet` boxes
+%% Which list a `predmet` box goes to is given by `\predmetlist` at the place of the box;
+%% `predmety.tex` switches it to `zbrane` for the weapons and armour section.
+\newcommand*{\predmetlist}{predmety}
+%% `\asterionaddtolist{<list>}` (in the box's `phantom` code): link target at the box, then the
+%%   entry (`list entry`); the list name is expanded right away, so a later switch of
+%%   `\predmetlist` cannot affect boxes whose page is not shipped out yet
+\makeatletter
+\NewDocumentCommand{\asterionaddtolist}{m}{%
+    \MakeLinkTarget*{asterionbox.\thetcolorboxnumber}%
+    \edef\asterion@addtolist{\noexpand\tcb@addcontentsline{#1}{tcolorbox}}\asterion@addtolist
+}
+\makeatother
+\tcbset{
+    asterion pravidlo/.style={phantom={\asterionaddtolist{pravidla}}},
+    asterion prozatimni/.style={phantom={\asterionaddtolist{prozatimni}}},
+    asterion predmet/.style={phantom={\asterionaddtolist{\predmetlist}}},
+}
+%% add a rule that is not in a `pravidlo` box (e.g. a whole subsection) to the list of rules,
+%% linking to the current place: `\pravidlovprehledu{Fateův fraktál}`
+\NewDocumentCommand{\pravidlovprehledu}{m}{\addcontentsline{pravidla}{tcolorbox}{#1}}
