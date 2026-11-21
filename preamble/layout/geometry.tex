@@ -27,6 +27,27 @@
 \geometry{
 	paperwidth=210mm,
 	paperheight=297mm,
+	width=145mm,
+	top=72pt,
+	hmarginratio=1:1,
+	textheight=650pt,
+	footskip=40pt,
+	marginparsep=0pt,
+	marginparwidth=0pt,
+}
+
+%%% Geometry switching commands
+%% standard (no margin notes) for the title page and TOC, wide (with margin notes) from the introduction on
+\newcommand{\standardgeometry}{\newgeometry{%
+	width=145mm,
+	top=72pt,
+	hmarginratio=1:1,
+	textheight=650pt,
+	footskip=40pt,
+	marginparsep=0pt,
+	marginparwidth=0pt,
+}}
+\newcommand{\widegeometry}{\newgeometry{%
 	left=42pt,
 	top=72pt,
 	textwidth=320pt,
@@ -34,14 +55,15 @@
 	marginparwidth=180pt,
 	textheight=650pt,
 	footskip=40pt,
-}
+}}
 
+%% computed when used, since the margin width depends on the active geometry
 \newlength{\overhang}
-\setlength{\overhang}{\marginparwidth}
-\addtolength{\overhang}{\marginparsep}
 %
 \newenvironment{fullwidth}
-  {\ifthenelse{\boolean{@twoside}}%
+  {\setlength{\overhang}{\marginparwidth}%
+   \addtolength{\overhang}{\marginparsep}%
+   \ifthenelse{\boolean{@twoside}}%
      {\begin{adjustwidth*}{}{-\overhang}}%
      {\begin{adjustwidth}{}{-\overhang}}%
   }%

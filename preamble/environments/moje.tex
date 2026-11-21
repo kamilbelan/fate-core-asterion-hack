@@ -1,34 +1,56 @@
 %% Define new environments with custom styles
 \NewTodoLike{Pravidlo}{gray!15}       % Light gray background
 
-\NewTColorBox{pravidlo}{o}{  
-    todolike,  
-    colback=gray!15,            % Lighter blood-red  
-    colframe=gray!70!black,     % Darker border  
-    title={Pravidlo\IfValueT{#1}{ \textmd{(#1)}}.}  
+%%% Boxes of the rulebook: pravidlo, předmět, povolání, realistické hraní
+%% All share one look (coloured background, thick rule on the left, title run into the text)
+%% and are made by `\NewAsterionBox{<env>}{<label>}{<background>}{<rule>}`;
+%% use them as `\begin{<env>}[<name>] ... \end{<env>}`.
+%%
+%% Robustness:
+%%   - the width follows the current line width, so a box inside a list or `fullwidth`
+%%     never sticks out of the text column (into the wide margin),
+%%   - extra `\emergencystretch`, since the box is narrower than the text
+%%     and monospace `\dov{}` words do not hyphenate,
+%%   - breakable across pages; every part of a split box is closed on its own (`enhanced jigsaw`),
+%%     the part ends with "pokračuje na další straně" and the next one repeats the title.
+\tcbuselibrary{hooks} % for `before upper app`
+\tcbset{
+    asterionbox/.style={
+        todolike,
+        enhanced jigsaw,
+        width=\linewidth,
+        before upper app={\emergencystretch=3em\relax},
+        pad before break=2.4em,    % room for "pokračuje..." at the bottom of a part
+        pad after break=2.4em,     % room for the repeated title at the top of the next part
+    },
 }
 
-\NewTColorBox{predmet}{o}{  
-    todolike,  
-    colback=blue!10,            % Lighter blood-red  
-    colframe=blue!70!black,     % Darker border  
-    title={Předmět\IfValueT{#1}{ \textmd{(#1)}}.}  
+%% Marks of a box split across pages (#1 = colour, #2 = label, #3 = name or NoValue)
+\NewDocumentCommand{\asterionboxcontinues}{m}{%
+    \node[anchor=south east, inner sep=0pt, font=\footnotesize\sffamily\itshape, text=#1]
+        at ([xshift=-0.9em, yshift=1.2ex]interior.south east) {pokračuje na další straně};%
 }
-\NewTColorBox{povolani}{o}{  
-    todolike,  
-    colback=yellow!15,            % Lighter blood-red  
-    colframe=yellow!70!black,     % Darker border  
-    title={Povolání\IfValueT{#1}{ \textmd{(#1)}}.}  
+\NewDocumentCommand{\asterionboxcontinued}{mmm}{%
+    \node[anchor=north west, inner sep=0pt, font=\footnotesize\sffamily, text=#1]
+        at ([xshift=0.9em, yshift=-1.2ex]interior.north west)
+        {\textbf{#2}\IfValueT{#3}{ (#3)} -- pokračování};%
 }
 
-
-\definecolor{bloodred}{RGB}{150, 0, 0}  
-
-% Step 2: Create a standalone environment  
-\NewTColorBox{Real}{o}{  
-    todolike,  
-    colback=bloodred!10,            % Lighter blood-red  
-    colframe=bloodred!70!black,     % Darker border  
-    title={Realistické hraní\IfValueT{#1}{ \textmd{(#1)}}.}  
+\NewDocumentCommand{\NewAsterionBox}{mmmm}{%
+    \NewTColorBox{#1}{o}{%
+        asterionbox,
+        colback=#3,
+        colframe=#4,
+        title={#2\IfValueT{##1}{ \textmd{(##1)}}.},
+        overlay first={\asterionboxcontinues{#4}},
+        overlay middle={\asterionboxcontinued{#4}{#2}{##1}\asterionboxcontinues{#4}},
+        overlay last={\asterionboxcontinued{#4}{#2}{##1}},
+    }%
 }
 
+\definecolor{bloodred}{RGB}{150, 0, 0}
+
+\NewAsterionBox{pravidlo}{Pravidlo}{gray!15}{gray!70!black}
+\NewAsterionBox{predmet}{Předmět}{blue!10}{blue!70!black}
+\NewAsterionBox{povolani}{Povolání}{yellow!15}{yellow!70!black}
+\NewAsterionBox{Real}{Realistické hraní}{bloodred!10}{bloodred!70!black}

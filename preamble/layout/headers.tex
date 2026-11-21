@@ -32,9 +32,10 @@
               minimum width=1.5cm,minimum height=1.5cm,
               align=center,font=\sffamily\bfseries\fontsize{28pt}{28pt}\selectfont] (num)
               at (0,0) {\IfBooleanTF{#1}{}{#2}};
-        % Chapter title
-        \node[anchor=west,xshift=2cm,font=\sffamily\bfseries\fontsize{20pt}{22pt}\selectfont,text=FateBlue] (title)
-              at (num.east) {\MakeUppercase{#3}};
+        % Chapter title (wraps within the text width, without hyphenation)
+        \node[anchor=west,xshift=2cm,font=\sffamily\bfseries\fontsize{20pt}{22pt}\selectfont,text=FateBlue,
+              text width=\linewidth-3.5cm-0.7em,align=left] (title)
+              at (num.east) {\hyphenpenalty=10000\MakeUppercase{#3}\par};% `\par` while the penalty is still set
     \end{tikzpicture}
     \par\vspace{25pt}
 }

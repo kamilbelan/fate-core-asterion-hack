@@ -6,7 +6,7 @@
 \usepackage{hologo} % Provides *TeX logos (for example `\hologo{pdfLaTeX}`)
 
 \newcommand{\asp}[1]{\textbf{\textit{#1}}}   % Bold and italic for \asp{}
-\newcommand{\dov}[1]{\texttt{\textbf{#1}}}   % Monospace and bold for \dov{}
+\newcommand{\dov}[1]{\texttt{\textbf{\spaceskip=0.525em plus 0.3em minus 0.1em\relax#1}}}   % Monospace and bold for \dov{} (spaces may stretch, so lines with skills can be justified)
 \newcommand{\trk}[1]{\underline{\textit{#1}}} % Italic and underlined for \trk{}
 \newcommand{\akc}[1]{\textsc{#1}}            % Small caps for \akc{}
 \newcommand{\per}[1]{\textbf{\sffamily #1}}
@@ -14,11 +14,14 @@
 \ExplSyntaxOn
 
 % Define \policko{<number>}{<count>}
+% a line may break between the boxes, so long rows wrap instead of overflowing
 \NewDocumentCommand \policko { m m }
   {
     \int_step_inline:nn { #2 }
       {
-        \fbox{#1}\,
+        \int_compare:nNnF { ##1 } = { 1 }
+          { \penalty 0 \hskip 0.25em plus 0.25em \scan_stop: }
+        \fbox{#1}
       }
   }
 
