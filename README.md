@@ -1,3 +1,12 @@
+# Uzitecne odkazy
+## Asterion
+- nase [wiki](https://asterion.moschehaus.com/)
+- asterionsky [web](https://asterionrpg.cz/)
+
+## Fate 
+- cesky preklad na [nepocitacovych hrach](https://fate.nepocitacovehry.cz/)
+- [web](https://evilhat.com/product/fate-core-system/) vydavatelu
+
 # Nevymysleno & nenapsano
 
 # Cenik
