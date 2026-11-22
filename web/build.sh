@@ -237,7 +237,7 @@ card() {   # href, title, meta, [extra class], [download name] -- the personal s
         "$cls" "$1" "$dl" "$2" "$3"
 }
 files="$(
-    card web/index.html "Webová verze" "web${partial:+ · $partial}" soubor-hlavni
+    card web/index.html "Webová verze" "online v prohlížeči${partial:+ · $partial}" soubor-hlavni
     [ -f "$SITE/main.pdf" ]   && card main.pdf "PDF pro počítač" "A4 · $(mb "$SITE/main.pdf")$(pages "$SITE/main.pdf")"
     [ -f "$SITE/mobile.pdf" ] && card mobile.pdf "PDF pro mobil" "$(mb "$SITE/mobile.pdf")$(pages "$SITE/mobile.pdf")"
     [ -f "$EPUBFILE" ]        && card "$(basename "$EPUBFILE")" "EPUB" "$(mb "$EPUBFILE")${partial:+ · $partial}" "" "fate-asterion-hack.epub"
