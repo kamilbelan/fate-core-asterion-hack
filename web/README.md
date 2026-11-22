@@ -38,16 +38,13 @@ CSS — otherwise the counts or the "unconverted TeX" report will say so.
 The output uses only relative links: `web/` links to the downloads one level up
 (`../main.pdf`, `../mobile.pdf`, `../asterion.epub`), so the site works in any folder.
 The workflow assembles exactly the published files into `site/` (`index.html`, the PDFs,
-the EPUB, `web/`) and deploys that folder to:
-
-- **GitHub Pages**, and
-- **https://kamilbelan.net/fate-asterion/**: `rsync --delete` over SSH to `kb-vps`
-  (89.167.19.41) into `/var/www/fate-asterion`, served by Caddy (`handle_path
-  /fate-asterion/*`). It uses a deploy key that can only write into that folder (`rrsync` in
-  `authorized_keys`), stored in the repository secrets `DEPLOY_SSH_KEY` and
-  `DEPLOY_KNOWN_HOSTS`; the step is skipped while the key is not set. The folder is
-  separate from the personal site's `public/`, so the site's own `rsync --delete` deploy
-  never touches it.
+the EPUB, `web/`) and deploys that folder to **https://kamilbelan.net/fate-asterion/**:
+`rsync --delete` over SSH to `kb-vps` (89.167.19.41) into `/var/www/fate-asterion`, served
+by Caddy (`handle_path /fate-asterion/*`). It uses a deploy key that can only write into
+that folder (`rrsync` in `authorized_keys`), stored in the repository secrets
+`DEPLOY_SSH_KEY` and `DEPLOY_KNOWN_HOSTS`; the step is skipped while the key is not set.
+The folder is separate from the personal site's `public/`, so the site's own
+`rsync --delete` deploy never touches it.
 
 ## Fonts
 

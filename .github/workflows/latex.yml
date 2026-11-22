@@ -79,15 +79,6 @@ jobs:
           if [ -d build/web ]; then cp -r build/web site/; fi
           ls -la site
 
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          destination_dir: .
-          keep_files: false
-
       # https://kamilbelan.net/fate-asterion/ (kb-vps, Caddy). The deploy key can only write into
       # /var/www/fate-asterion (rrsync on the server), see web/README.md. Skipped while the
       # DEPLOY_SSH_KEY secret is not set.

@@ -6,8 +6,8 @@
 #   web/build.sh <out-dir> <epub>    # other output locations
 #
 # The output folder is self-contained and uses only relative links, so it can be served
-# from any path: GitHub Pages (next to main.pdf, mobile.pdf and the EPUB, one level up)
-# or copied into another website.
+# from any path (next to main.pdf, mobile.pdf and the EPUB, one level up) or copied into
+# another website.
 #
 # The .tex files are the source of truth; nothing under build/ is edited by hand.
 # How the conversion works: web/lib/preprocess.pl (what pandoc's LaTeX reader would drop),
