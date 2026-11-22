@@ -337,6 +337,12 @@ main img { filter: var(--img-filter); }
 }
 .book-nav > li > a:hover { background: var(--surface-2); color: var(--text); }
 .book-nav > li > a[aria-current="page"] { background: var(--current-bg); color: var(--link); font-weight: 600; }
+/* the appendices, set apart from the chapters */
+.book-nav .book-nav__part {
+  margin-top: 0.9rem; padding: 0.9rem 0.75rem 0.35rem; border-top: 1px solid var(--rule);
+  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted);
+}
 .book-nav .jen-pdf {
   display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
   padding: 0.6rem 0.75rem; color: var(--muted);
@@ -547,6 +553,8 @@ main caption { caption-side: bottom; padding-top: 0.4em; font-size: 0.85em; colo
 /* -- figures -- */
 figure { margin: 1.8em 0; }
 figure img { display: block; margin: 0 auto; border-radius: 2px; }
+/* the picture of the PDF title page, on the contents page */
+img.titulni { display: block; width: 100%; margin: 0.5em 0 1.5em; border-radius: 2px; }
 figcaption {
   margin-top: 0.5em;
   font-size: 0.85em; line-height: 1.4; text-align: center; color: var(--muted);

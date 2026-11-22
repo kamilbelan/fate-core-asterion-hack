@@ -3,11 +3,15 @@
 #   (default)    the label -> {page, anchor, title} Lua table that asterion.lua uses to
 #                turn \Cref{...} into real links (to another page, or within the EPUB)
 #   --chapters   a TSV of the chapters in document order: file <TAB> slug <TAB> title
+#   --entries    a TSV of the entries of the contents (navigation, contents page, landing):
+#                slug <TAB> href <TAB> title. A chapter is one entry; an appendix part
+#                (no \chapter) is one entry per labelled \section, so the page with the
+#                lists of aspects and of tricks is listed under each of them.
 #
 # Chapter order comes from the \subfile lines of main.tex; chapter titles and labels, and
 # the labels of sections, from the chapter files themselves.
 #
-#   perl web/lib/labelmap.pl <repo-root> [--chapters]
+#   perl web/lib/labelmap.pl <repo-root> [--chapters | --entries]
 use strict;
 use warnings;
 binmode(STDOUT, ":encoding(UTF-8)");
@@ -30,7 +34,15 @@ while ($main =~ /\\subfile\{chapters\/([^}]+)\}/g) {
     }
     (my $slug = $file) =~ s{/}{-}g;       # dodatky/uvod -> dodatky-uvod (no clash with uvod)
     $slug =~ tr/_/-/;
-    push @chapters, { file => $file, slug => $slug, title => $title };
+    my @entries = ({ anchor => '', title => $title });
+    if ($tex !~ /\\chapter\*?\{/) {                     # further sections of an appendix part
+        my $n = 0;
+        (my $live = $tex) =~ s/(?<!\\)%[^\n]*//g;
+        while ($live =~ /\\section\*?\{((?:[^{}]|\{[^{}]*\})*)\}\s*(?:\\label\{([^}]+)\})?/g) {
+            push @entries, { anchor => $2, title => clean($1) } if $n++ && defined $2;
+        }
+    }
+    push @chapters, { file => $file, slug => $slug, title => $title, entries => \@entries };
     $map{$label} = { page => $slug, anchor => '', title => $title } if $label ne '';
 
     # sections, and anything else labelled right after a heading
@@ -62,6 +74,13 @@ die "labelmap: found no chapters in $src/main.tex\n" unless @chapters;
 
 if (defined $mode && $mode eq '--chapters') {
     print join("\t", $_->{file}, $_->{slug}, $_->{title}), "\n" for @chapters;
+    exit 0;
+}
+if (defined $mode && $mode eq '--entries') {
+    for my $c (@chapters) {
+        print join("\t", $c->{slug}, "$c->{slug}.html" . ($_->{anchor} ne "" ? "#$_->{anchor}" : ""), $_->{title}), "\n"
+            for @{ $c->{entries} };
+    }
     exit 0;
 }
 

@@ -38,6 +38,7 @@ commit="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || true)"
 # --- chapters and labels -----------------------------------------------------------------
 perl "$LIB/labelmap.pl" "$ROOT" > "$TMP/labelmap.lua"
 perl "$LIB/labelmap.pl" "$ROOT" --chapters > "$TMP/chapters.tsv"
+perl "$LIB/labelmap.pl" "$ROOT" --entries > "$TMP/entries.tsv"   # the contents: slug, href, title
 built=()
 while IFS=$'\t' read -r file slug title; do
     if [ "$CHAPTERS" = all ] || [[ " $CHAPTERS " == *" $slug "* ]]; then built+=("$slug"); fi
@@ -87,17 +88,24 @@ done < "$TMP/chapters.tsv" | sort -u | while read -r name; do
 done
 echo "}" >> "$TMP/images.lua"
 
-# --- navigation: every chapter of the book, the converted ones as links -------------------
+# --- navigation: every entry of the contents, the converted ones as links ------------------
+# Appendix parts come after a "Dodatky" divider. A page listed under several entries (the
+# lists of aspects and of tricks) has them all marked current and no "Na této stránce" list.
+multi_entry() { [ "$(cut -f1 "$TMP/entries.tsv" | grep -cx "$1")" -gt 1 ]; }
 nav_html() {                                                  # $1 = current slug
-    while IFS=$'\t' read -r file slug title; do
+    local part=""
+    while IFS=$'\t' read -r slug href title; do
         title="$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<< "$title")"   # inserted as raw HTML
+        if [[ "$slug" == dodatky-* && -z "$part" ]]; then
+            part=1; printf '<li class="book-nav__part">Dodatky</li>'
+        fi
         if is_built "$slug"; then
             cur=""; [ "$slug" = "$1" ] && cur=' aria-current="page"'
-            printf '<li><a href="%s.html"%s>%s</a></li>' "$slug" "$cur" "$title"
+            printf '<li><a href="%s"%s>%s</a></li>' "$href" "$cur" "$title"
         else
             printf '<li class="jen-pdf"><span>%s</span> <small>jen v PDF</small></li>' "$title"
         fi
-    done < "$TMP/chapters.tsv"
+    done < "$TMP/entries.tsv"
 }
 
 common=(--lua-filter="$LIB/asterion.lua"
@@ -121,8 +129,9 @@ for i in "${!order[@]}"; do
         fi
     done
 
+    toc=(--toc --toc-depth=3); multi_entry "$slug" && toc=()   # its sections are in the navigation
     pandoc -f latex -t html5 -s "${common[@]}" "${page_vars[@]}" -M page="$slug" -V slug="$slug" \
-        -M searchindex="$TMP/search.jsonl" --toc --toc-depth=3 -M pagetitle="$title" \
+        -M searchindex="$TMP/search.jsonl" "${toc[@]}" -M pagetitle="$title" \
         -V nav="$(nav_html "$slug")" -V prev="$prev" -V next="$next" \
         "$TMP/$slug.tex" -o "$OUT/$slug.html" 2> "$TMP/$slug.err" || die "pandoc failed on $file"
     if [ -s "$TMP/$slug.err" ]; then cat "$TMP/$slug.err" >&2; status=1; fi
@@ -161,18 +170,26 @@ done
 printf '  %-28s -> %s (%s entries)\n' "(search index)" "${OUT#"$ROOT"/}/assets/search.json" "$(wc -l < "$TMP/search.jsonl")"
 
 # --- contents page -------------------------------------------------------------------------
+# the picture from the PDF title page, under the title
+if [ -n "$IMG" ]; then
+    $IMG "$ROOT/figures/logo.png" -background white -alpha remove -alpha off -resize '1400x1400>' \
+        -strip -quality 82 -interlace JPEG "$OUT/img/logo.jpg"; logo=img/logo.jpg
+else cp "$ROOT/figures/logo.png" "$OUT/img/logo.png"; logo=img/logo.png; fi
 {
     printf '# Fate Core: Asterion Hack\n\n'
+    printf '<img class="titulni" src="%s" alt="">\n\n' "$logo"
     printf -- '[↩︎ O textu a ke stažení](../)\n\n'
     printf 'Pravidla Fate Core upravená pro svět Asterionu. '
     printf 'Všechny kapitoly jsou níže, ke stažení jsou i verze v PDF a EPUB.\n\n'
     printf '## Obsah\n\n'
-    while IFS=$'\t' read -r file slug title; do
-        if is_built "$slug"; then printf -- '- [%s](%s.html)\n' "$title" "$slug"
+    part=""
+    while IFS=$'\t' read -r slug href title; do
+        if [[ "$slug" == dodatky-* && -z "$part" ]]; then part=1; printf '\n### Dodatky\n\n'; fi
+        if is_built "$slug"; then printf -- '- [%s](%s)\n' "$title" "$href"
         else printf -- '- %s *(jen v PDF)*\n' "$title"; fi
-    done < "$TMP/chapters.tsv"
+    done < "$TMP/entries.tsv"
     printf '\n## Ke stažení\n\n'
-	printf -- '- [pdf (A4)](../main.pdf)\n- [pdf (pro mobil))](../mobile.pdf)\n- [epub](../asterion.epub)\n'
+	printf -- '- [pdf (A4)](../main.pdf)\n- [pdf (pro mobil)](../mobile.pdf)\n- [epub](../asterion.epub)\n'
 } > "$TMP/index.md"
 pandoc -f markdown -t html5 -s "${page_vars[@]}" -M pagetitle="Obsah" \
     -V nav="$(nav_html "")" -V next="<a href=\"${built[0]}.html\" rel=\"next\">$(awk -F'\t' -v s="${built[0]}" '$2==s{print $3}' "$TMP/chapters.tsv")</a>" \
@@ -224,12 +241,12 @@ files="$(
     card "$REPO" "Zdrojový kód" "GitHub · LaTeX"
 )"
 chapters_html=""; appendices_html=""
-while IFS=$'\t' read -r file slug title; do
+while IFS=$'\t' read -r slug href title; do
     title="$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<< "$title")"
-    if is_built "$slug"; then item="<li><a href=\"web/$slug.html\">$title</a></li>"
+    if is_built "$slug"; then item="<li><a href=\"web/$href\">$title</a></li>"
     else item="<li class=\"jen-pdf\">$title <small>(pdf)</small></li>"; fi
     if [[ "$slug" == dodatky-* ]]; then appendices_html+="    $item"$'\n'; else chapters_html+="    $item"$'\n'; fi
-done < "$TMP/chapters.tsv"
+done < "$TMP/entries.tsv"
 
 # The landing page is a page of kamilbelan.net and uses its stylesheet. Its file name carries
 # a content hash, so the current one is read from the live site and copied next to the page
