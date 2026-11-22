@@ -69,6 +69,23 @@
     .soubor-hlavni { border-width: 2px; }
     .jen-pdf { color: var(--muted-text-color); }
     .jen-pdf small { font-size: 0.8em; }
+    /* the changelog, hidden until its toggle is clicked (native <details>, no animation) */
+    .novinky { margin: 0 0 1.5rem; }
+    .novinky summary { display: inline-block; list-style: none; cursor: pointer;
+                       padding: 0.1em 0.5em; border: 1px solid currentColor; border-radius: 3px; }
+    .novinky summary::-webkit-details-marker { display: none; }
+    .novinky summary::before { content: "▸ "; }
+    .novinky[open] summary::before { content: "▾ "; }
+    .novinky summary:hover { background: var(--highlight); }
+    .novinky-datum { color: var(--muted-text-color); font-size: 0.9em; }
+    .novinky-obsah { margin-top: 0.75rem; padding-left: 1rem;
+                     border-left: 3px solid var(--secondary-text-color); }
+    .novinky-obsah h3 { margin: 0.75rem 0 0.25rem; font-size: 1em; }
+    /* game terms, as in the text (without its fonts) */
+    .novinky .asp { font-style: italic; }
+    .novinky .trk { font-style: italic; font-weight: bold; }
+    .novinky .dov { font-weight: 600; }
+    .novinky .akc, .novinky .per { font-variant: small-caps; }
   </style>
 </head>
 <body a="dark">
@@ -152,7 +169,7 @@
     <tr><th>Autor</th><td>Racochejl a kol.</td></tr>
     <tr><th>Systém</th><td>Fate Core (4. edice)</td></tr>
     <tr><th>Svět</th><td>Asterion</td></tr>
-    <tr><th>Verze</th><td>verze 22. listopadu 2026 (93546c5)</td></tr>
+    <tr><th>Verze</th><td>verze 22. listopadu 2026 (97c6f85)</td></tr>
     <tr><th>Zdrojový kód</th><td><a href="https://github.com/kamilbelan/fate-core-asterion-hack">https://github.com/kamilbelan/fate-core-asterion-hack</a></td></tr>
   </table></div>
 

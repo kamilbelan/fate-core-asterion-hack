@@ -71,6 +71,23 @@ $endif$
     .soubor-hlavni { border-width: 2px; }
     .jen-pdf { color: var(--muted-text-color); }
     .jen-pdf small { font-size: 0.8em; }
+    /* the changelog, hidden until its toggle is clicked (native <details>, no animation) */
+    .novinky { margin: 0 0 1.5rem; }
+    .novinky summary { display: inline-block; list-style: none; cursor: pointer;
+                       padding: 0.1em 0.5em; border: 1px solid currentColor; border-radius: 3px; }
+    .novinky summary::-webkit-details-marker { display: none; }
+    .novinky summary::before { content: "▸ "; }
+    .novinky[open] summary::before { content: "▾ "; }
+    .novinky summary:hover { background: var(--highlight); }
+    .novinky-datum { color: var(--muted-text-color); font-size: 0.9em; }
+    .novinky-obsah { margin-top: 0.75rem; padding-left: 1rem;
+                     border-left: 3px solid var(--secondary-text-color); }
+    .novinky-obsah h3 { margin: 0.75rem 0 0.25rem; font-size: 1em; }
+    /* game terms, as in the text (without its fonts) */
+    .novinky .asp { font-style: italic; }
+    .novinky .trk { font-style: italic; font-weight: bold; }
+    .novinky .dov { font-weight: 600; }
+    .novinky .akc, .novinky .per { font-variant: small-caps; }
   </style>
 </head>
 <body a="dark">
@@ -95,6 +112,15 @@ $endif$
   <div class="soubory">
 $files$
   </div>
+$if(novinky)$
+  <details class="novinky">
+    <summary>Co je nového <span class="novinky-datum">($novinkydatum$)</span></summary>
+    <div class="novinky-obsah">
+$novinky$
+      <p><a href="web/dodatky-zmeny.html">Všechny změny</a></p>
+    </div>
+  </details>
+$endif$
 
   <h2 id="kapitoly">Kapitoly</h2>
 $if(webnote)$

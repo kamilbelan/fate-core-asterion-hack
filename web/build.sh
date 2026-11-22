@@ -178,6 +178,9 @@ else cp "$ROOT/figures/logo.png" "$OUT/img/logo.png"; logo=img/logo.png; fi
 {
     printf '# Fate Core: Asterion Hack\n\n'
     printf '<img class="titulni" src="%s" alt="">\n\n' "$logo"
+    # the version, with a link to the changelog, as on the PDF title page
+    if is_built dodatky-zmeny; then printf '[%s · [Co je nového](dodatky-zmeny.html)]{.verze}\n\n' "$VERSION"
+    else printf '[%s]{.verze}\n\n' "$VERSION"; fi
     printf -- '[↩︎ O textu a ke stažení](../)\n\n'
     printf 'Pravidla Fate Core upravená pro svět Asterionu. '
     printf 'Všechny kapitoly jsou níže, ke stažení jsou i verze v PDF a EPUB.\n\n'
@@ -234,7 +237,7 @@ card() {   # href, title, meta, [extra class], [download name] -- the personal s
         "$cls" "$1" "$dl" "$2" "$3"
 }
 files="$(
-    card web/index.html "Číst online" "web${partial:+ · $partial}" soubor-hlavni
+    card web/index.html "Webová verze" "web${partial:+ · $partial}" soubor-hlavni
     [ -f "$SITE/main.pdf" ]   && card main.pdf "PDF pro počítač" "A4 · $(mb "$SITE/main.pdf")$(pages "$SITE/main.pdf")"
     [ -f "$SITE/mobile.pdf" ] && card mobile.pdf "PDF pro mobil" "$(mb "$SITE/mobile.pdf")$(pages "$SITE/mobile.pdf")"
     [ -f "$EPUBFILE" ]        && card "$(basename "$EPUBFILE")" "EPUB" "$(mb "$EPUBFILE")${partial:+ · $partial}" "" "fate-asterion-hack.epub"
@@ -247,6 +250,29 @@ while IFS=$'\t' read -r slug href title; do
     else item="<li class=\"jen-pdf\">$title <small>(pdf)</small></li>"; fi
     if [[ "$slug" == dodatky-* ]]; then appendices_html+="    $item"$'\n'; else chapters_html+="    $item"$'\n'; fi
 done < "$TMP/entries.tsv"
+
+# The changelog (dodatky/zmeny.tex, "Co je nového") behind a toggle: its newest entries, taken
+# from the built web page, with the links made relative to the site root. The first line of
+# the output is the date of the newest entry. No entries yet -> no toggle.
+novinky=""; novinky_datum=""
+if is_built dodatky-zmeny; then
+    novinky="$(perl -0ne '
+        my ($m) = m{<main[^>]*>(.*?)</main>}s or exit;
+        my @e = grep { /^<h2\b/ } split /(?=<h2\b)/, $m;   # one entry per date (\subsection*)
+        exit unless @e;
+        splice @e, 3 if @e > 3;
+        my $html = join "", @e;
+        $html =~ s{<(/?)h2\b}{<$1h3}g;
+        $html =~ s{\s+id="[^"]*"}{}g;                        # no clashes with the landing ids
+        $html =~ s{href="#}{href="web/dodatky-zmeny.html#}g;
+        $html =~ s{href="(?![a-z]+:|/|\.\./|web/)}{href="web/}g;
+        (my $datum = $e[0]) =~ s{.*?<h2[^>]*>(.*?)</h2>.*}{$1}s;
+        $datum =~ s/<[^>]*>//g;
+        print "$datum\n$html";
+    ' "$OUT/dodatky-zmeny.html")"
+    novinky_datum="$(head -n1 <<< "$novinky")"
+    novinky="$(tail -n +2 <<< "$novinky")"
+fi
 
 # The landing page is a page of kamilbelan.net and uses its stylesheet. Its file name carries
 # a content hash, so the current one is read from the live site and copied next to the page
@@ -263,6 +289,7 @@ fi
 pandoc -f markdown -t html5 --template="$WEB/templates/landing.html" -M pagetitle=landing \
     -V version="$VERSION" -V repo="$REPO" -V files="$files" -V sitecss="$sitecss" \
     -V chapters="$chapters_html" -V appendices="$appendices_html" \
+    -V novinky="$novinky" -V novinkydatum="$novinky_datum" \
     -V webnote="${partial:+převedeno ${#built[@]} z $total}" \
     /dev/null -o "$SITE/index.html"
 printf '  %-28s -> %s\n' "(landing page)" "${SITE#"$ROOT"/}/index.html"
