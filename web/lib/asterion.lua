@@ -6,12 +6,14 @@
 --   images    path to a Lua table: \includegraphics name -> file in the output (img/…)
 --   page      slug of the page being converted ("" for the EPUB, which is one document)
 --   built     comma-separated slugs of the chapters that have a web page / are in the EPUB
+--   prehledy  web: file to append this page's entries of the Přehledy to (see Pandoc below)
 --
 -- Anything that is still TeX after conversion is reported on stderr: pandoc drops what it
 -- does not understand, and a silent build must mean nothing was lost.
 
 local MAP, IMAGES, PAGE, BUILT = {}, {}, "", {}
 local SEARCH                                   -- web: file to append this page's search entries to
+local PREHLEDY                                 -- web: file to append this page's Přehledy entries to
 local EPUB = FORMAT:match("epub") ~= nil
 local boxcount, notecount = 0, 0
 local USED_IDS = {}
@@ -46,7 +48,8 @@ function Meta(m)
   PAGE   = pandoc.utils.stringify(m.page or "")
   for s in pandoc.utils.stringify(m.built or ""):gmatch("[^,]+") do BUILT[s] = true end
   SEARCH = m.searchindex and pandoc.utils.stringify(m.searchindex) or nil
-  m.labelmap, m.images, m.page, m.built, m.searchindex = nil, nil, nil, nil, nil
+  PREHLEDY = m.prehledy and pandoc.utils.stringify(m.prehledy) or nil
+  m.labelmap, m.images, m.page, m.built, m.searchindex, m.prehledy = nil, nil, nil, nil, nil, nil
   return m
 end
 
@@ -154,6 +157,51 @@ function Table(el)
   return pandoc.Div({ el }, pandoc.Attr("", { "tabulka" }))   -- scrolls inside itself on a phone
 end
 
+-- the same box name can occur twice (e.g. a speciality of two povolání): keep ids unique,
+-- which matters in the EPUB, where all chapters are one document
+local function unique_id(base)
+  local id, n = base, 1
+  while USED_IDS[id] do n = n + 1; id = base .. "-" .. n end
+  USED_IDS[id] = true
+  return id
+end
+
+-- a marker paragraph (`@@BOX@@<name>`, `@@BOX:<list>@@<name>`, `@@PREHLED:<list>@@<name>`,
+-- see preprocess.pl): its kind, its list (or ""), and the name's inlines; nil if b is none
+local function marker(b)
+  if not (b.t == "Para" or b.t == "Plain") then return nil end
+  local first = b.content[1]
+  if not (first and first.t == "Str") then return nil end
+  local kind, list = first.text:match("^@@(%u+):?(%w*)@@")
+  if not kind then return nil end
+  local name = pandoc.List(b.content):clone()
+  name[1] = pandoc.Str((first.text:gsub("^@@%u+:?%w*@@", "")))
+  if name[1].text == "" then name:remove(1) end
+  return kind, list, name
+end
+
+-- a name as LaTeX for the Přehledy page (prehledy.pl), terms as the `\textcolor{<class>}`
+-- the web definitions make of them
+local function to_tex(inlines)
+  local ins = pandoc.Inlines(inlines):walk({
+    Span = function(s)
+      local c = s.classes[1]
+      if not TERMS[c] then return nil end
+      local out = pandoc.List({ pandoc.RawInline("latex", "\\textcolor{" .. c .. "}{") })
+      out:extend(s.content)
+      out:insert(pandoc.RawInline("latex", "}"))
+      return out
+    end,
+  })
+  return (pandoc.write(pandoc.Pandoc({ pandoc.Plain(ins) }), "latex", { wrap_text = "none" }):gsub("%s+$", ""))
+end
+
+-- an entry of the Přehledy, kept on the element until Pandoc() collects them in order
+local function list_entry(el, list, tex)
+  el.attributes["prehled"] = list
+  el.attributes["prehled-tex"] = tex
+end
+
 -- boxes: title from the @@BOX@@ marker paragraph, an id to link to, class per box type
 function Div(el)
   local kind = el.classes[1]
@@ -162,28 +210,16 @@ function Div(el)
   if not label then return nil end
   -- the name keeps its markup (e.g. "Možné výsledky \akc{Akcí}"): the marker paragraph's
   -- inlines without the leading "@@BOX@@"
-  local name, body = nil, {}
+  local name, list, body = nil, "", {}
   for _, b in ipairs(el.content) do
-    if name == nil and (b.t == "Para" or b.t == "Plain")
-        and pandoc.utils.stringify(b):sub(1, 7) == "@@BOX@@" then
-      name = pandoc.List(b.content or {})
-      local first = name[1]
-      if first and first.t == "Str" then
-        first.text = first.text:gsub("^@@BOX@@", "")
-        if first.text == "" then name:remove(1) end
-      end
-    else
-      body[#body + 1] = b
-    end
+    local mkind, mlist, mname = nil, nil, nil
+    if name == nil then mkind, mlist, mname = marker(b) end
+    if mkind == "BOX" then name, list = mname, mlist or ""
+    else body[#body + 1] = b end
   end
   boxcount = boxcount + 1
   local plain = name and pandoc.utils.stringify(name) or ""
-  local id = slug(kind .. "-" .. (plain ~= "" and plain or tostring(boxcount)))
-  -- the same box name can occur twice (e.g. a speciality of two povolání): keep ids unique,
-  -- which matters in the EPUB, where all chapters are one document
-  local base, n = id, 1
-  while USED_IDS[id] do n = n + 1; id = base .. "-" .. n end
-  USED_IDS[id] = true
+  local id = unique_id(slug(kind .. "-" .. (plain ~= "" and plain or tostring(boxcount))))
   local title = { pandoc.Strong({ pandoc.Str(label) }) }
   if plain ~= "" then
     title[#title + 1] = pandoc.Space()
@@ -192,7 +228,29 @@ function Div(el)
     title[#title + 1] = pandoc.Str(")")
   end
   table.insert(body, 1, pandoc.Div({ pandoc.Plain(title) }, pandoc.Attr("", { "box-title" })))
-  return pandoc.Div(body, pandoc.Attr(id, { "box", "box-" .. slug(kind) }))
+  local box = pandoc.Div(body, pandoc.Attr(id, { "box", "box-" .. slug(kind) }))
+  if list ~= "" then list_entry(box, list, plain ~= "" and to_tex(name) or label) end
+  return box
+end
+
+-- a rule listed with \pravidlovprehledu (marker @@PREHLED:<list>@@<name>): the entry links to
+-- the heading right before it, otherwise to an anchor at its place
+function Blocks(blocks)
+  for i = #blocks, 1, -1 do
+    local kind, list, name = marker(blocks[i])
+    if kind == "PREHLED" then
+      local prev = blocks[i - 1]
+      if prev and prev.t == "Header" and prev.identifier ~= "" then
+        list_entry(prev, list, to_tex(name))
+        blocks:remove(i)
+      else
+        local anchor = pandoc.Div({}, pandoc.Attr(unique_id(slug("prehled-" .. pandoc.utils.stringify(name))), {}))
+        list_entry(anchor, list, to_tex(name))
+        blocks[i] = anchor
+      end
+    end
+  end
+  return blocks
 end
 
 -- in the EPUB, each chapter heading gets an id that cross-references can point to
@@ -231,8 +289,30 @@ end
 
 local function is_box(b) return b.t == "Div" and b.classes:includes("box") and b.identifier ~= "" end
 
+-- the Přehledy (lists after the contents in the PDF): the entries that Div and Blocks marked,
+-- in document order, as TSV lines (list, page, anchor, name as LaTeX) appended to PREHLEDY;
+-- prehledy.pl makes the page from them. The marks are removed from the output.
+local function prehledy(doc)
+  local lines = {}
+  local function collect(el)
+    local list = el.attributes["prehled"]
+    if not list then return nil end
+    lines[#lines + 1] = table.concat({ list, PAGE, el.identifier, (el.attributes["prehled-tex"]:gsub("%s+", " ")) }, "\t")
+    el.attributes["prehled"], el.attributes["prehled-tex"] = nil, nil
+    return el
+  end
+  doc = doc:walk({ Div = collect, Header = collect })
+  if PREHLEDY and #lines > 0 then
+    local f = assert(io.open(PREHLEDY, "a"))
+    f:write(table.concat(lines, "\n"), "\n")
+    f:close()
+  end
+  return doc
+end
+
 function Pandoc(doc)
-  if EPUB or not SEARCH then return nil end
+  doc = prehledy(doc)
+  if EPUB or not SEARCH then return doc end
   local entries, chapter, cur = {}, "", nil
   local function flush()
     if cur and cur.x ~= "" then entries[#entries + 1] = cur end
@@ -267,13 +347,13 @@ function Pandoc(doc)
   local f = assert(io.open(SEARCH, "a"))
   for _, e in ipairs(entries) do f:write(pandoc.json.encode(e), "\n") end
   f:close()
-  return nil
+  return doc
 end
 
 return {
   { Meta = Meta },
   { Inlines = Inlines },
   { Span = Span, Link = Link, Image = Image, Note = Note, RawInline = RawInline,
-    RawBlock = RawBlock, Table = Table, Div = Div, Header = Header },
+    RawBlock = RawBlock, Table = Table, Div = Div, Header = Header, Blocks = Blocks },
   { Pandoc = Pandoc },
 }

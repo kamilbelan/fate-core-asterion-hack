@@ -7,7 +7,11 @@
 #   1. Boxes (`pravidlo`, `predmet`, `povolani`, `Real`, `specialita`, `prozatimni`):
 #      pandoc keeps an unknown environment as a Div with its name as the class, but throws
 #      away the optional argument -- the box's name. It is moved into the body as a marker
-#      paragraph (@@BOX@@<name>) that the filter turns into the box title.
+#      paragraph (@@BOX@@<name>) that the filter turns into the box title. A box that the
+#      PDF lists after the contents (the Přehledy, see `preamble/layout/toc.tex`) carries
+#      the list's name in the marker (@@BOX:<list>@@<name>): `pravidlo` -> pravidla,
+#      `prozatimni` -> prozatimni, `predmet` -> the current `\predmetlist`. A rule listed
+#      with `\pravidlovprehledu{<name>}` becomes a marker paragraph @@PREHLED:pravidla@@<name>.
 #   2. `\sidenotemark` ... `\sidenotetext{...}` (the text comes later, e.g. after an `akce`
 #      list): each text is moved to its mark, then all margin notes become `\footnote`;
 #      the filter renders footnotes as margin notes on the web, as footnotes in the EPUB.
@@ -15,7 +19,7 @@
 #   4. `tblr` (tabularray) is unknown to pandoc: rewritten to a `tabular` with the same
 #      number of columns; booktabs rules are understood.
 #   5. Layout-only commands are removed: `multicols`, `\columnbreak`, the `\predmetlist`
-#      switch, `\pravidlovprehledu`.
+#      switch (after step 1 has used it).
 #   6. The book's own macros get web definitions (prepended): term styles become
 #      `\textcolor{<class>}{...}` (pandoc keeps that as a styled span; the filter turns the
 #      colour into a CSS class), `\todo` disappears (player edition), `\zdrojobrazku` becomes
@@ -53,7 +57,18 @@ if (my $slug = $ENV{SLUG}) {
 
 # --- 1: box names ------------------------------------------------------------------
 my $BOXES = qr/pravidlo|predmet|povolani|Real|specialita|prozatimni/;
-$tex =~ s/\\begin\{($BOXES)\}\[([^\]]*)\]/\\begin{$1}\n\n\@\@BOX\@\@$2\n\n/g;
+my %LIST = (pravidlo => 'pravidla', prozatimni => 'prozatimni');   # predmet: \predmetlist
+my $predmetlist = 'predmety';                                      # its default (moje.tex)
+my $LISTED = qr/\\renewcommand\*?\{\\predmetlist\}\{([^}]*)\}|\\begin\{($BOXES)\}(?:\[([^\]]*)\])?|\\pravidlovprehledu\{([^}]*)\}/;
+$tex =~ s{$LISTED}{
+    if (defined $1) { $predmetlist = $1; '' }
+    elsif (defined $2) {
+        my $list = $2 eq 'predmet' ? $predmetlist : $LIST{$2};
+        defined $3 || $list ? "\\begin{$2}\n\n\@\@BOX" . ($list ? ":$list" : '') . "\@\@" . ($3 // '') . "\n\n"
+                            : "\\begin{$2}";
+    }
+    else { "\n\n\@\@PREHLED:pravidla\@\@$4\n\n" }
+}ge;
 # remark-like boxes (keytheorems) take the title in brackets or braces: \begin{příklad}{Použití magie}
 $tex =~ s/\\begin\{(příklad|poznámka)\}(?:\[([^\]]*)\]|\{([^{}]*)\})/"\\begin{$1}\n\n\@\@BOX\@\@" . ($2 \/\/ $3) . "\n\n"/ge;
 
@@ -104,8 +119,6 @@ sub tabular_head {
 # --- 5: layout only -------------------------------------------------------------------
 $tex =~ s/\\(?:begin|end)\{multicols\}(?:\{\d+\})?//g;
 $tex =~ s/\\columnbreak//g;
-$tex =~ s/\\renewcommand\*?\{\\predmetlist\}\{[^}]*\}//g;
-$tex =~ s/\\pravidlovprehledu\{[^}]*\}//g;
 $tex =~ s/\\begin\{sloppypar\}|\\end\{sloppypar\}//g;
 $tex =~ s/\\RaggedRight//g;
 

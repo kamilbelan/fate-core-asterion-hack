@@ -20,6 +20,7 @@ resizes images. GitHub Actions runs it after the PDFs (`.github/workflows/latex.
 | `lib/preprocess.pl` | rewrites what pandoc's LaTeX reader would drop (see its header) |
 | `lib/asterion.lua` | pandoc filter: terms, boxes, `\Cref` links, margin notes, tables, images; writes the full-text search index (`assets/search.json`, used by the search in `web.js`) |
 | `lib/rejstrik.pl` | the appendix lists of all aspects and tricks, linking to every occurrence |
+| `lib/prehledy.pl` | the Přehledy page (lists of rules, provisional rules, weapons and armour, items, as after the PDF contents), from the boxes the filter recorded; also the first chapter of the EPUB |
 | `templates/page.html` | page template (header, contents drawer, theme switch, footer) |
 | `assets/web.css`, `assets/web.js` | design of the web edition |
 | `assets/epub.css` | plain styling for the EPUB (reader apps override most of it) |

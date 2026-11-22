@@ -45,6 +45,10 @@ while IFS=$'\t' read -r file slug title; do
 done < "$TMP/chapters.tsv"
 [ ${#built[@]} -gt 0 ] || die "no chapters selected (WEB_CHAPTERS=$CHAPTERS)"
 BUILT="$(IFS=,; echo "${built[*]}")"
+# the Přehledy (lists of rules and items; after the contents in the PDF) are a page of their
+# own, made after the chapters from their boxes; first in the contents, as in the PDF
+BUILT="prehledy,$BUILT"
+sed -i "1i prehledy\tprehledy.html\t$(sed -n 's/.*\\chapter\*{\([^}]*\)}.*/\1/p' "$ROOT/preamble/layout/toc.tex" | head -1)" "$TMP/entries.tsv"
 is_built() { [[ ",$BUILT," == *",$1,"* ]]; }
 
 # --- preprocessing of every chapter (also the ones without a web page: the lists of terms
@@ -118,6 +122,7 @@ page_vars=(--template="$WEB/templates/page.html" -V lang=cs
 mapfile -t order < <(cut -f2 "$TMP/chapters.tsv")
 prev=""; status=0
 : > "$TMP/search.jsonl"                                     # full-text search index (asterion.lua)
+: > "$TMP/prehledy.tsv"; listed=0                          # entries of the Přehledy (asterion.lua)
 for i in "${!order[@]}"; do
     slug="${order[$i]}"; is_built "$slug" || continue
     IFS=$'\t' read -r file _ title < <(awk -F'\t' -v s="$slug" '$2==s' "$TMP/chapters.tsv")
@@ -131,7 +136,7 @@ for i in "${!order[@]}"; do
 
     toc=(--toc --toc-depth=3); multi_entry "$slug" && toc=()   # its sections are in the navigation
     pandoc -f latex -t html5 -s "${common[@]}" "${page_vars[@]}" -M page="$slug" -V slug="$slug" \
-        -M searchindex="$TMP/search.jsonl" "${toc[@]}" -M pagetitle="$title" \
+        -M searchindex="$TMP/search.jsonl" -M prehledy="$TMP/prehledy.tsv" "${toc[@]}" -M pagetitle="$title" \
         -V nav="$(nav_html "$slug")" -V prev="$prev" -V next="$next" \
         "$TMP/$slug.tex" -o "$OUT/$slug.html" 2> "$TMP/$slug.err" || die "pandoc failed on $file"
     if [ -s "$TMP/$slug.err" ]; then cat "$TMP/$slug.err" >&2; status=1; fi
@@ -162,8 +167,23 @@ for i in "${!order[@]}"; do
                     "$(perl -0ne '$n++ while /<img(?![^>]*class="ikona")[^>]*>/g; print $n+0' <<< "$html")"
     check "iconitem" "$(grep -o '\\iconitem{' <<< "$body" | wc -l)" "$(grep -o 'class="ikona"' <<< "$html" | wc -l)"
     check "sidenote" "$(grep -oE '\\sidenote(mark)?\b' <<< "$body" | wc -l)" "$(grep -o 'class="sidenote"' <<< "$html" | wc -l)"
+    listed=$(( listed + $(grep -oE '\\begin\{(pravidlo|prozatimni|predmet)\}|\\pravidlovprehledu\{' <<< "$body" | wc -l || true) ))
     printf '  %-28s -> %s\n' "chapters/$file.tex" "${OUT#"$ROOT"/}/$slug.html"
 done
+
+# --- Přehledy: lists of the rules and items in the chapters, linking to each box -----------
+perl "$LIB/prehledy.pl" "$ROOT/preamble/layout/toc.tex" "$TMP/chapters.tsv" "$TMP/prehledy.tsv" \
+    | perl "$LIB/preprocess.pl" > "$TMP/prehledy.tex"
+prehledy_title="$(awk -F'\t' '$1=="prehledy"{print $3}' "$TMP/entries.tsv")"
+pandoc -f latex -t html5 -s "${common[@]}" "${page_vars[@]}" -M page=prehledy -V slug=prehledy \
+    --toc --toc-depth=2 -M pagetitle="$prehledy_title" -V nav="$(nav_html prehledy)" \
+    -V prev="<a href=\"index.html\" rel=\"prev\">Obsah</a>" \
+    -V next="<a href=\"${built[0]}.html\" rel=\"next\">$(awk -F'\t' -v s="${built[0]}" '$2==s{print $3}' "$TMP/chapters.tsv")</a>" \
+    "$TMP/prehledy.tex" -o "$OUT/prehledy.html" 2> "$TMP/prehledy.err" || die "pandoc failed on the Přehledy"
+if [ -s "$TMP/prehledy.err" ]; then cat "$TMP/prehledy.err" >&2; status=1; fi
+slug=prehledy check "entries" "$listed" "$(grep -c . "$TMP/prehledy.tsv")"
+slug=prehledy check "links" "$listed" "$(grep -o 'class="poznamka"' "$OUT/prehledy.html" | wc -l)"
+printf '  %-28s -> %s\n' "(Přehledy)" "${OUT#"$ROOT"/}/prehledy.html"
 
 # --- search index: one JSON array of all the entries ----------------------------------------
 { printf "["; paste -sd, "$TMP/search.jsonl"; printf "]\n"; } > "$OUT/assets/search.json"
@@ -204,12 +224,14 @@ cp "$WEB/fonts/"*.woff2 "$OUT/assets/fonts/"
 printf '  %-28s -> %s\n' "(contents, assets)" "${OUT#"$ROOT"/}/"
 
 # --- EPUB: the same chapters as one book ----------------------------------------------------
-# one document: the web definitions of the macros once, then the chapters' bodies
-for slug in "${built[@]}"; do
-    if [ "$slug" = "${built[0]}" ]; then cat "$TMP/$slug.tex"
-    else sed '1,/@@END-OF-WEB-DEFINITIONS@@/d' "$TMP/$slug.tex"; fi
-    printf '\n'
-done > "$TMP/epub.tex"
+# one document: the web definitions of the macros once, then the Přehledy (as in the PDF;
+# asterion.lua turns their links into links within the book) and the chapters' bodies
+{
+    cat "$TMP/prehledy.tex"; printf '\n'
+    for slug in "${built[@]}"; do
+        sed '1,/@@END-OF-WEB-DEFINITIONS@@/d' "$TMP/$slug.tex"; printf '\n'
+    done
+} > "$TMP/epub.tex"
 epub_in=("$TMP/epub.tex")
 pandoc -f latex -t epub3 "${common[@]}" -M page="" \
     -M title="Fate Core: Asterion Hack" -M author="Racochejl a kol." -M date="$(date +%Y-%m-%d)" -M description="$VERSION" \
@@ -245,6 +267,7 @@ files="$(
 )"
 chapters_html=""; appendices_html=""
 while IFS=$'\t' read -r slug href title; do
+    [ "$slug" = prehledy ] && continue                     # chapters only (a numbered list)
     title="$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<< "$title")"
     if is_built "$slug"; then item="<li><a href=\"web/$href\">$title</a></li>"
     else item="<li class=\"jen-pdf\">$title <small>(pdf)</small></li>"; fi

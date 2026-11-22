@@ -516,6 +516,15 @@ main img { filter: var(--img-filter); }
 .akce img.ikona { position: absolute; left: 0; top: 0.1em; width: 2.2em; height: 2.2em; }
 img.ikona { width: 1.5em; height: 1.5em; vertical-align: middle; }   /* fallback outside .akce */
 
+/* -- Přehledy: the lists of rules and items; the chapter stands where the PDF has the page -- */
+.prehled > ul { list-style: none; padding: 0; margin: 0 0 1.6em; }
+.prehled > ul > li { padding: 0.35em 0; border-bottom: 1px solid var(--rule); }
+.prehled > ul > li + li { margin-top: 0; }
+.prehled > ul > li > p { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 1em; }
+.prehled > ul > li > p > .poznamka {
+  margin-left: auto; text-align: right; font: 0.85rem/1.3 var(--font-sans);
+}
+
 /* -- tables (booktabs) -- */
 .tabulka {
   --scroll-cover: var(--bg);
